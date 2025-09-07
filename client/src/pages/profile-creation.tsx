@@ -13,17 +13,80 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
-import { insertUserProfileSchema } from "@shared/schema";
+import { insertUserProfileSchema, type UserProfile } from "@shared/schema";
+import { z } from "zod";
 
 const interests = [
+  // Nightlife & Entertainment
   { value: "jazz", label: "🎷 Jazz Music", emoji: "🎷" },
   { value: "cocktails", label: "🍸 Cocktails", emoji: "🍸" },
   { value: "dancing", label: "💃 Dancing", emoji: "💃" },
   { value: "wine", label: "🍷 Wine", emoji: "🍷" },
-  { value: "art", label: "🎨 Art", emoji: "🎨" },
   { value: "live-music", label: "🎵 Live Music", emoji: "🎵" },
   { value: "whiskey", label: "🥃 Whiskey", emoji: "🥃" },
+  { value: "karaoke", label: "🎤 Karaoke", emoji: "🎤" },
+  { value: "clubbing", label: "🕺 Clubbing", emoji: "🕺" },
+  { value: "concerts", label: "🎸 Concerts", emoji: "🎸" },
+  { value: "comedy", label: "😂 Comedy", emoji: "😂" },
+  { value: "trivia", label: "🧠 Trivia", emoji: "🧠" },
+  
+  // Arts & Culture
+  { value: "art", label: "🎨 Art", emoji: "🎨" },
   { value: "literature", label: "📚 Literature", emoji: "📚" },
+  { value: "museums", label: "🏛️ Museums", emoji: "🏛️" },
+  { value: "theater", label: "🎭 Theater", emoji: "🎭" },
+  { value: "photography", label: "📷 Photography", emoji: "📷" },
+  { value: "writing", label: "✍️ Writing", emoji: "✍️" },
+  { value: "poetry", label: "📝 Poetry", emoji: "📝" },
+  { value: "film", label: "🎬 Film & Movies", emoji: "🎬" },
+  { value: "vintage", label: "⏰ Vintage", emoji: "⏰" },
+  
+  // Food & Drink
+  { value: "cooking", label: "👨‍🍳 Cooking", emoji: "👨‍🍳" },
+  { value: "foodie", label: "🍽️ Foodie", emoji: "🍽️" },
+  { value: "coffee", label: "☕ Coffee", emoji: "☕" },
+  { value: "craft-beer", label: "🍺 Craft Beer", emoji: "🍺" },
+  { value: "brunch", label: "🥞 Brunch", emoji: "🥞" },
+  { value: "baking", label: "🧁 Baking", emoji: "🧁" },
+  
+  // Lifestyle
+  { value: "travel", label: "✈️ Travel", emoji: "✈️" },
+  { value: "fashion", label: "👗 Fashion", emoji: "👗" },
+  { value: "wellness", label: "🧘 Wellness", emoji: "🧘" },
+  { value: "spirituality", label: "🙏 Spirituality", emoji: "🙏" },
+  { value: "astrology", label: "⭐ Astrology", emoji: "⭐" },
+  { value: "meditation", label: "🧘‍♀️ Meditation", emoji: "🧘‍♀️" },
+  { value: "yoga", label: "🧘‍♂️ Yoga", emoji: "🧘‍♂️" },
+  
+  // Social & Personality
+  { value: "socializing", label: "🗣️ Socializing", emoji: "🗣️" },
+  { value: "networking", label: "🤝 Networking", emoji: "🤝" },
+  { value: "debates", label: "💬 Debates", emoji: "💬" },
+  { value: "volunteering", label: "❤️ Volunteering", emoji: "❤️" },
+  { value: "activism", label: "✊ Activism", emoji: "✊" },
+  
+  // Hobbies
+  { value: "reading", label: "📖 Reading", emoji: "📖" },
+  { value: "gaming", label: "🎮 Gaming", emoji: "🎮" },
+  { value: "board-games", label: "🎲 Board Games", emoji: "🎲" },
+  { value: "chess", label: "♟️ Chess", emoji: "♟️" },
+  { value: "collecting", label: "🏺 Collecting", emoji: "🏺" },
+  { value: "crafts", label: "🧵 Arts & Crafts", emoji: "🧵" },
+  { value: "gardening", label: "🌱 Gardening", emoji: "🌱" },
+  
+  // Music & Performance  
+  { value: "music", label: "🎶 Music", emoji: "🎶" },
+  { value: "singing", label: "🎤 Singing", emoji: "🎤" },
+  { value: "piano", label: "🎹 Piano", emoji: "🎹" },
+  { value: "guitar", label: "🎸 Guitar", emoji: "🎸" },
+  { value: "violin", label: "🎻 Violin", emoji: "🎻" },
+  
+  // Business & Career
+  { value: "entrepreneurship", label: "💼 Entrepreneurship", emoji: "💼" },
+  { value: "investing", label: "📈 Investing", emoji: "📈" },
+  { value: "real-estate", label: "🏠 Real Estate", emoji: "🏠" },
+  { value: "technology", label: "💻 Technology", emoji: "💻" },
+  { value: "crypto", label: "₿ Cryptocurrency", emoji: "₿" },
 ];
 
 export default function ProfileCreation() {
@@ -34,21 +97,24 @@ export default function ProfileCreation() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
 
   // Check if user already has a profile
-  const { data: existingProfile, isLoading: profileLoading } = useQuery({
+  const { data: existingProfile, isLoading: profileLoading } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
     enabled: !!user && !authLoading,
     retry: false,
   });
 
   const form = useForm({
-    resolver: zodResolver(insertUserProfileSchema.omit({ userId: true })),
+    resolver: zodResolver(insertUserProfileSchema.omit({ userId: true }).extend({
+      birthday: z.string().optional(),
+      interests: z.array(z.string()).default([]),
+    })),
     defaultValues: {
       username: "",
       phoneNumber: "",
       birthday: "",
       gender: "",
       sexualOrientation: "",
-      interests: [],
+      interests: [] as string[],
       bio: "",
       profilePhotoUrl: "",
     },
@@ -57,7 +123,7 @@ export default function ProfileCreation() {
   // If user has existing profile, populate form
   useEffect(() => {
     if (existingProfile) {
-      form.reset({
+      const profileData = {
         username: existingProfile.username || "",
         phoneNumber: existingProfile.phoneNumber || "",
         birthday: existingProfile.birthday ? new Date(existingProfile.birthday).toISOString().split('T')[0] : "",
@@ -66,7 +132,8 @@ export default function ProfileCreation() {
         interests: existingProfile.interests || [],
         bio: existingProfile.bio || "",
         profilePhotoUrl: existingProfile.profilePhotoUrl || "",
-      });
+      };
+      form.reset(profileData);
       setSelectedInterests(existingProfile.interests || []);
     }
   }, [existingProfile, form]);
@@ -323,24 +390,35 @@ export default function ProfileCreation() {
                 />
 
                 <div>
-                  <FormLabel>Interests</FormLabel>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {interests.map((interest) => (
-                      <button
-                        key={interest.value}
-                        type="button"
-                        onClick={() => toggleInterest(interest.value)}
-                        className={`px-3 py-2 text-sm rounded-md transition-all ${
-                          selectedInterests.includes(interest.value)
-                            ? "bg-secondary text-secondary-foreground"
-                            : "bg-muted hover:bg-secondary hover:text-secondary-foreground"
-                        }`}
-                        data-testid={`button-interest-${interest.value}`}
-                      >
-                        {interest.label}
-                      </button>
-                    ))}
+                  <FormLabel>Interests (Select up to 5)</FormLabel>
+                  <p className="text-xs text-muted-foreground mb-2">Choose interests that best describe you</p>
+                  <div className="max-h-48 overflow-y-auto border border-border rounded-lg p-3 bg-muted/30">
+                    <div className="grid grid-cols-2 gap-2">
+                      {interests.map((interest) => (
+                        <button
+                          key={interest.value}
+                          type="button"
+                          onClick={() => toggleInterest(interest.value)}
+                          disabled={!selectedInterests.includes(interest.value) && selectedInterests.length >= 5}
+                          className={`px-2 py-1.5 text-xs rounded-md transition-all text-left ${
+                            selectedInterests.includes(interest.value)
+                              ? "bg-secondary text-secondary-foreground shadow-sm"
+                              : selectedInterests.length >= 5
+                              ? "bg-muted/50 text-muted-foreground cursor-not-allowed opacity-50"
+                              : "bg-card hover:bg-secondary hover:text-secondary-foreground border border-border"
+                          }`}
+                          data-testid={`button-interest-${interest.value}`}
+                        >
+                          {interest.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                  {selectedInterests.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Selected: {selectedInterests.length}/5
+                    </p>
+                  )}
                 </div>
 
                 <FormField

@@ -30,14 +30,33 @@ export default function ProfileCard({ user, profile, onMeetAtBar, onPass, isLoad
     : profile.username;
 
   const interestEmojis: Record<string, string> = {
-    jazz: "🎷",
-    cocktails: "🍸",
-    dancing: "💃",
-    wine: "🍷",
-    art: "🎨",
-    "live-music": "🎵",
-    whiskey: "🥃",
-    literature: "📚",
+    // Nightlife & Entertainment
+    jazz: "🎷", cocktails: "🍸", dancing: "💃", wine: "🍷", "live-music": "🎵", 
+    whiskey: "🥃", karaoke: "🎤", clubbing: "🕺", concerts: "🎸", comedy: "😂", trivia: "🧠",
+    
+    // Arts & Culture
+    art: "🎨", literature: "📚", museums: "🏛️", theater: "🎭", photography: "📷", 
+    writing: "✍️", poetry: "📝", film: "🎬", vintage: "⏰",
+    
+    // Food & Drink
+    cooking: "👨‍🍳", foodie: "🍽️", coffee: "☕", "craft-beer": "🍺", brunch: "🥞", baking: "🧁",
+    
+    // Lifestyle
+    travel: "✈️", fashion: "👗", wellness: "🧘", spirituality: "🙏", astrology: "⭐", 
+    meditation: "🧘‍♀️", yoga: "🧘‍♂️",
+    
+    // Social & Personality
+    socializing: "🗣️", networking: "🤝", debates: "💬", volunteering: "❤️", activism: "✊",
+    
+    // Hobbies
+    reading: "📖", gaming: "🎮", "board-games": "🎲", chess: "♟️", collecting: "🏺", 
+    crafts: "🧵", gardening: "🌱",
+    
+    // Music & Performance
+    music: "🎶", singing: "🎤", piano: "🎹", guitar: "🎸", violin: "🎻",
+    
+    // Business & Career
+    entrepreneurship: "💼", investing: "📈", "real-estate": "🏠", technology: "💻", crypto: "₿",
   };
 
   return (
