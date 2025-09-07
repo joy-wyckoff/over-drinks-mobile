@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Import screens
 import LandingScreen from '../screens/LandingScreen';
+import LoginScreen from '../screens/LoginScreen';
+import AccountCreationScreen from '../screens/AccountCreationScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileCreationScreen from '../screens/ProfileCreationScreen';
 import VenueDiscoveryScreen from '../screens/VenueDiscoveryScreen';
@@ -13,7 +15,7 @@ import ProfileBrowsingScreen from '../screens/ProfileBrowsingScreen';
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, needsProfileCompletion } = useAuth();
 
   if (isLoading) {
     // You can add a loading screen here
@@ -28,7 +30,15 @@ const AppNavigator = () => {
       }}
     >
       {!isAuthenticated ? (
-        <Stack.Screen name="Landing" component={LandingScreen} />
+        <>
+          <Stack.Screen name="Landing" component={LandingScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="AccountCreation" component={AccountCreationScreen} />
+        </>
+      ) : needsProfileCompletion ? (
+        <>
+          <Stack.Screen name="ProfileCreation" component={ProfileCreationScreen} />
+        </>
       ) : (
         <>
           <Stack.Screen name="Home" component={HomeScreen} />

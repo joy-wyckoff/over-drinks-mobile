@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const Button = ({
@@ -101,7 +102,7 @@ const Button = ({
         baseStyle.push({ color: colors.primaryForeground });
         break;
       default: // primary
-        baseStyle.push({ color: colors.primaryForeground });
+        baseStyle.push({ color: '#ffffff' }); // White text for gold gradient
     }
 
     if (textStyle) {
@@ -111,6 +112,42 @@ const Button = ({
     return baseStyle;
   };
 
+  const renderButtonContent = () => (
+    <View style={styles.content}>
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color="#ffffff"
+        />
+      ) : (
+        <>
+          {icon && <View style={styles.icon}>{icon}</View>}
+          <Text style={getTextStyle()}>{title}</Text>
+        </>
+      )}
+    </View>
+  );
+
+  if (variant === 'primary') {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={disabled || loading}
+        activeOpacity={0.7}
+        {...props}
+      >
+        <LinearGradient
+          colors={['#D4AF37', '#B8860B', '#9A7B0F']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.button, styles.medium, style]}
+        >
+          {renderButtonContent()}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <TouchableOpacity
       style={getButtonStyle()}
@@ -119,19 +156,7 @@ const Button = ({
       activeOpacity={0.7}
       {...props}
     >
-      <View style={styles.content}>
-        {loading ? (
-          <ActivityIndicator
-            size="small"
-            color={variant === 'primary' ? colors.primaryForeground : colors.text}
-          />
-        ) : (
-          <>
-            {icon && <View style={styles.icon}>{icon}</View>}
-            <Text style={getTextStyle()}>{title}</Text>
-          </>
-        )}
-      </View>
+      {renderButtonContent()}
     </TouchableOpacity>
   );
 };
@@ -142,6 +167,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    minHeight: 44,
+    width: '100%',
   },
   small: {
     paddingHorizontal: 12,
@@ -162,22 +189,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
+    width: '100%',
   },
   icon: {
     marginRight: 8,
   },
   text: {
     fontWeight: '600',
+    fontFamily: 'Georgia',
     textAlign: 'center',
   },
   smallText: {
-    fontSize: 14,
-  },
-  mediumText: {
     fontSize: 16,
   },
-  largeText: {
+  mediumText: {
     fontSize: 18,
+  },
+  largeText: {
+    fontSize: 20,
   },
 });
 

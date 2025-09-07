@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   venueName: {
     fontSize: 20,
     fontWeight: 'bold',
-    fontFamily: 'serif',
+    fontFamily: 'Georgia',
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,

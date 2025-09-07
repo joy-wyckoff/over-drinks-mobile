@@ -4,92 +4,81 @@ import {
   Text,
   StyleSheet,
   ImageBackground,
+  Image,
   ScrollView,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
 const LandingScreen = () => {
   const { colors } = useTheme();
-  const { login } = useAuth();
+  const navigation = useNavigation();
 
   const handleLogin = () => {
-    // For demo purposes, we'll simulate a login
-    // In a real app, you'd integrate with your auth provider
-    const mockToken = 'mock-auth-token-' + Date.now();
-    login(mockToken);
+    navigation.navigate('Login');
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <ImageBackground
-        source={{
-          uri: 'https://images.unsplash.com/photo-1566417109768-bbd36fc89c11?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080',
-        }}
+        source={require('../../assets/background.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
         <LinearGradient
-          colors={['rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
+          colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.4)']}
           style={styles.gradient}
         >
           <SafeAreaView style={styles.safeArea}>
             <View style={styles.content}>
               {/* Logo Section */}
               <View style={styles.logoSection}>
-                <Text style={[styles.title, { color: colors.secondary }]}>
-                  Over Drinks
-                </Text>
-                <View style={styles.iconRow}>
-                  <Text style={[styles.icon, { color: colors.secondary }]}>🍷</Text>
-                  <Text style={[styles.icon, { color: colors.accent, fontSize: 32 }]}>🍸</Text>
-                  <Text style={[styles.icon, { color: colors.secondary }]}>🍷</Text>
+                <Image 
+                  source={require('../../assets/logo.png')} 
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+                <View style={styles.taglineWrapper}>
+                  <Text style={[styles.tagline, { color: colors.textSecondary }]}>
+                    Where connections happen over cocktails
+                  </Text>
                 </View>
-                <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-                  Where connections happen over cocktails
-                </Text>
               </View>
 
-              {/* Login Card */}
-              <Card style={styles.loginCard}>
-                <View style={styles.loginContent}>
-                  <Text style={[styles.welcomeTitle, { color: colors.text }]}>
-                    Welcome to the Speakeasy
-                  </Text>
-                  <Text style={[styles.welcomeDescription, { color: colors.textSecondary }]}>
-                    Join an exclusive community of sophisticated singles who appreciate the finer things in life.
-                  </Text>
-                  <Button
-                    title="Enter the Speakeasy"
-                    onPress={handleLogin}
-                    style={styles.loginButton}
-                  />
-                </View>
-              </Card>
+              {/* Login Button */}
+              <View style={styles.loginContainer}>
+                <Button
+                  title="Find Your Crowd"
+                  onPress={handleLogin}
+                  style={styles.loginButton}
+                />
+              </View>
 
               {/* Features */}
               <View style={styles.features}>
                 <View style={styles.feature}>
-                  <Text style={[styles.featureIcon, { color: colors.accent }]}>📍</Text>
+                  <Ionicons name="paper-plane" size={20} color={colors.accent} style={styles.solidIcon} />
                   <Text style={[styles.featureText, { color: colors.textSecondary }]}>
                     Find people at your favorite bars & clubs
                   </Text>
                 </View>
                 <View style={styles.feature}>
-                  <Text style={[styles.featureIcon, { color: colors.accent }]}>❤️</Text>
+                  <Ionicons name="heart" size={20} color={colors.accent} style={styles.solidIcon} />
                   <Text style={[styles.featureText, { color: colors.textSecondary }]}>
                     Connect with like-minded individuals
                   </Text>
                 </View>
                 <View style={styles.feature}>
-                  <Text style={[styles.featureIcon, { color: colors.accent }]}>🍹</Text>
+                  <Ionicons name="wine" size={20} color={colors.accent} style={styles.solidIcon} />
                   <Text style={[styles.featureText, { color: colors.textSecondary }]}>
                     Meet over drinks, not apps
                   </Text>
@@ -125,37 +114,36 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginTop: -20,
+    marginBottom: 4,
   },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    fontFamily: 'serif',
+  logo: {
+    width: 525,
+    height: 225,
     marginBottom: 16,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
-  iconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  icon: {
-    fontSize: 24,
-    marginHorizontal: 8,
+  taglineWrapper: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 32,
   },
   tagline: {
     fontSize: 16,
-    fontWeight: '300',
+    fontWeight: '400',
+    fontFamily: 'Georgia',
     textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.9)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
-  loginCard: {
+  loginContainer: {
     width: '100%',
     maxWidth: 400,
     marginBottom: 48,
-  },
-  loginContent: {
     alignItems: 'center',
   },
   welcomeTitle: {
@@ -171,7 +159,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   loginButton: {
-    width: '100%',
+    alignSelf: 'center',
+    width: 200,
   },
   features: {
     width: '100%',
@@ -187,9 +176,24 @@ const styles = StyleSheet.create({
     marginRight: 12,
     width: 24,
   },
+  solidIcon: {
+    marginRight: 12,
+    width: 24,
+    textAlign: 'center',
+  },
   featureText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontFamily: 'Georgia',
     flex: 1,
+    color: '#ffffff',
+    textShadowColor: 'rgba(0,0,0,0.9)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    lineHeight: 24,
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 6,
+    shadowOpacity: 0.4,
   },
 });
 

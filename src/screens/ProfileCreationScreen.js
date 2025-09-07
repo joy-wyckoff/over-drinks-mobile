@@ -11,15 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import Input from '../components/ui/Input';
 import TextArea from '../components/ui/TextArea';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { profileApi } from '../utils/api';
 
 const interests = [
   // Nightlife & Entertainment
@@ -48,129 +46,114 @@ const interests = [
   
   // Food & Drink
   { value: 'cooking', label: '👨‍🍳 Cooking', emoji: '👨‍🍳' },
-  { value: 'foodie', label: '🍽️ Foodie', emoji: '🍽️' },
+  { value: 'fine-dining', label: '🍽️ Fine Dining', emoji: '🍽️' },
   { value: 'coffee', label: '☕ Coffee', emoji: '☕' },
   { value: 'craft-beer', label: '🍺 Craft Beer', emoji: '🍺' },
+  { value: 'wine-tasting', label: '🍷 Wine Tasting', emoji: '🍷' },
+  { value: 'mixology', label: '🍹 Mixology', emoji: '🍹' },
+  { value: 'food-tours', label: '🍕 Food Tours', emoji: '🍕' },
   { value: 'brunch', label: '🥞 Brunch', emoji: '🥞' },
-  { value: 'baking', label: '🧁 Baking', emoji: '🧁' },
+  
+  // Social & Activities
+  { value: 'networking', label: '🤝 Networking', emoji: '🤝' },
+  { value: 'book-clubs', label: '📖 Book Clubs', emoji: '📖' },
+  { value: 'language-exchange', label: '🗣️ Language Exchange', emoji: '🗣️' },
+  { value: 'board-games', label: '🎲 Board Games', emoji: '🎲' },
+  { value: 'poker', label: '🃏 Poker', emoji: '🃏' },
+  { value: 'pool', label: '🎱 Pool', emoji: '🎱' },
+  { value: 'darts', label: '🎯 Darts', emoji: '🎯' },
+  { value: 'arcade', label: '🕹️ Arcade Games', emoji: '🕹️' },
+  
+  // Sports & Fitness
+  { value: 'yoga', label: '🧘 Yoga', emoji: '🧘' },
+  { value: 'gym', label: '💪 Gym', emoji: '💪' },
+  { value: 'running', label: '🏃 Running', emoji: '🏃' },
+  { value: 'cycling', label: '🚴 Cycling', emoji: '🚴' },
+  { value: 'hiking', label: '🥾 Hiking', emoji: '🥾' },
+  { value: 'tennis', label: '🎾 Tennis', emoji: '🎾' },
+  { value: 'golf', label: '⛳ Golf', emoji: '⛳' },
+  { value: 'swimming', label: '🏊 Swimming', emoji: '🏊' },
+  
+  // Travel & Adventure
+  { value: 'travel', label: '✈️ Travel', emoji: '✈️' },
+  { value: 'adventure', label: '🏔️ Adventure', emoji: '🏔️' },
+  { value: 'backpacking', label: '🎒 Backpacking', emoji: '🎒' },
+  { value: 'road-trips', label: '🚗 Road Trips', emoji: '🚗' },
+  { value: 'cruises', label: '🚢 Cruises', emoji: '🚢' },
+  { value: 'camping', label: '⛺ Camping', emoji: '⛺' },
+  
+  // Tech & Gaming
+  { value: 'gaming', label: '🎮 Gaming', emoji: '🎮' },
+  { value: 'tech', label: '💻 Technology', emoji: '💻' },
+  { value: 'crypto', label: '₿ Crypto', emoji: '₿' },
+  { value: 'ai', label: '🤖 AI & Machine Learning', emoji: '🤖' },
+  { value: 'vr', label: '🥽 VR/AR', emoji: '🥽' },
   
   // Lifestyle
-  { value: 'travel', label: '✈️ Travel', emoji: '✈️' },
   { value: 'fashion', label: '👗 Fashion', emoji: '👗' },
-  { value: 'wellness', label: '🧘 Wellness', emoji: '🧘' },
-  { value: 'spirituality', label: '🙏 Spirituality', emoji: '🙏' },
-  { value: 'astrology', label: '⭐ Astrology', emoji: '⭐' },
+  { value: 'beauty', label: '💄 Beauty', emoji: '💄' },
+  { value: 'wellness', label: '🌿 Wellness', emoji: '🌿' },
   { value: 'meditation', label: '🧘‍♀️ Meditation', emoji: '🧘‍♀️' },
-  { value: 'yoga', label: '🧘‍♂️ Yoga', emoji: '🧘‍♂️' },
-  
-  // Social & Personality
-  { value: 'socializing', label: '🗣️ Socializing', emoji: '🗣️' },
-  { value: 'networking', label: '🤝 Networking', emoji: '🤝' },
-  { value: 'debates', label: '💬 Debates', emoji: '💬' },
-  { value: 'volunteering', label: '❤️ Volunteering', emoji: '❤️' },
-  { value: 'activism', label: '✊ Activism', emoji: '✊' },
-  
-  // Hobbies
-  { value: 'reading', label: '📖 Reading', emoji: '📖' },
-  { value: 'gaming', label: '🎮 Gaming', emoji: '🎮' },
-  { value: 'board-games', label: '🎲 Board Games', emoji: '🎲' },
-  { value: 'chess', label: '♟️ Chess', emoji: '♟️' },
-  { value: 'collecting', label: '🏺 Collecting', emoji: '🏺' },
-  { value: 'crafts', label: '🧵 Arts & Crafts', emoji: '🧵' },
-  { value: 'gardening', label: '🌱 Gardening', emoji: '🌱' },
-  
-  // Music & Performance  
-  { value: 'music', label: '🎶 Music', emoji: '🎶' },
-  { value: 'singing', label: '🎤 Singing', emoji: '🎤' },
-  { value: 'piano', label: '🎹 Piano', emoji: '🎹' },
-  { value: 'guitar', label: '🎸 Guitar', emoji: '🎸' },
-  { value: 'violin', label: '🎻 Violin', emoji: '🎻' },
-  
-  // Business & Career
-  { value: 'entrepreneurship', label: '💼 Entrepreneurship', emoji: '💼' },
-  { value: 'investing', label: '📈 Investing', emoji: '📈' },
-  { value: 'real-estate', label: '🏠 Real Estate', emoji: '🏠' },
-  { value: 'technology', label: '💻 Technology', emoji: '💻' },
-  { value: 'crypto', label: '₿ Cryptocurrency', emoji: '₿' },
+  { value: 'sustainability', label: '🌱 Sustainability', emoji: '🌱' },
+  { value: 'minimalism', label: '🏠 Minimalism', emoji: '🏠' },
 ];
 
 const ProfileCreationScreen = () => {
   const { colors } = useTheme();
-  const { user } = useAuth();
+  const { user, markProfileCompleted } = useAuth();
   const navigation = useNavigation();
-  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
-    username: '',
-    phoneNumber: '',
-    birthday: '',
-    gender: '',
-    sexualOrientation: '',
     bio: '',
     profilePhotoUrl: '',
   });
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [profilePhoto, setProfilePhoto] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [existingProfile, setExistingProfile] = useState(null);
+  
+  // Validation states
+  const [validationErrors, setValidationErrors] = useState({
+    photo: false,
+    bio: false,
+    interests: false
+  });
 
   // Check if user already has a profile
-  const { data: existingProfile, isLoading: profileLoading } = useQuery({
-    queryKey: ['profile'],
-    queryFn: async () => {
-      const response = await profileApi.getProfile();
-      if (response.ok) {
-        return response.json();
-      }
-      return null;
-    },
-    retry: false,
-  });
-
-  // Populate form if user has existing profile
   useEffect(() => {
-    if (existingProfile) {
-      setFormData({
-        username: existingProfile.username || '',
-        phoneNumber: existingProfile.phoneNumber || '',
-        birthday: existingProfile.birthday ? new Date(existingProfile.birthday).toISOString().split('T')[0] : '',
-        gender: existingProfile.gender || '',
-        sexualOrientation: existingProfile.sexualOrientation || '',
-        bio: existingProfile.bio || '',
-        profilePhotoUrl: existingProfile.profilePhotoUrl || '',
-      });
-      setSelectedInterests(existingProfile.interests || []);
-      setProfilePhoto(existingProfile.profilePhotoUrl || '');
+    const loadExistingProfile = async () => {
+      try {
+        const profileData = await AsyncStorage.getItem(`profile_${user?.id}`);
+        if (profileData) {
+          const profile = JSON.parse(profileData);
+          setExistingProfile(profile);
+          setFormData({
+            bio: profile.bio || '',
+            profilePhotoUrl: profile.profilePhotoUrl || '',
+          });
+          setSelectedInterests(profile.interests || []);
+          setProfilePhoto(profile.profilePhotoUrl || '');
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+
+    if (user?.id) {
+      loadExistingProfile();
     }
-  }, [existingProfile]);
+  }, [user?.id]);
 
-  const createProfileMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await profileApi.createProfile(data);
-      return response.json();
-    },
-    onSuccess: () => {
-      Alert.alert('Success', 'Profile created successfully!');
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      navigation.navigate('VenueDiscovery');
-    },
-    onError: (error) => {
-      Alert.alert('Error', 'Failed to create profile. Please try again.');
-    },
-  });
-
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await profileApi.updateProfile(data);
-      return response.json();
-    },
-    onSuccess: () => {
-      Alert.alert('Success', 'Profile updated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      navigation.navigate('VenueDiscovery');
-    },
-    onError: (error) => {
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
-    },
-  });
+  const saveProfile = async (profileData) => {
+    try {
+      const profileKey = `profile_${user.id}`;
+      await AsyncStorage.setItem(profileKey, JSON.stringify(profileData));
+      return true;
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      return false;
+    }
+  };
 
   const handleImagePicker = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -190,6 +173,7 @@ const ProfileCreationScreen = () => {
     if (!result.canceled) {
       setProfilePhoto(result.assets[0].uri);
       setFormData(prev => ({ ...prev, profilePhotoUrl: result.assets[0].uri }));
+      setValidationErrors(prev => ({ ...prev, photo: false }));
     }
   };
 
@@ -202,34 +186,109 @@ const ProfileCreationScreen = () => {
       }
       return prev;
     });
+    
+    // Clear validation error when interests are selected
+    if (selectedInterests.length >= 4) {
+      setValidationErrors(prev => ({ ...prev, interests: false }));
+    }
   };
 
-  const handleSubmit = () => {
-    if (!formData.username.trim()) {
-      Alert.alert('Error', 'Username is required');
+  const handleBioChange = (text) => {
+    setFormData(prev => ({ ...prev, bio: text }));
+    if (text.trim().length > 0) {
+      setValidationErrors(prev => ({ ...prev, bio: false }));
+    }
+  };
+
+  const handleSubmit = async () => {
+    // Validate all required fields
+    const missingFields = [];
+    const newValidationErrors = {
+      photo: false,
+      bio: false,
+      interests: false
+    };
+    
+    if (!profilePhoto || !formData.profilePhotoUrl) {
+      missingFields.push('profile photo');
+      newValidationErrors.photo = true;
+    }
+    
+    if (!formData.bio || formData.bio.trim().length === 0) {
+      missingFields.push('bio');
+      newValidationErrors.bio = true;
+    }
+    
+    if (selectedInterests.length === 0) {
+      missingFields.push('interests');
+      newValidationErrors.interests = true;
+    } else if (selectedInterests.length < 5) {
+      missingFields.push(`${5 - selectedInterests.length} more interest${5 - selectedInterests.length === 1 ? '' : 's'}`);
+      newValidationErrors.interests = true;
+    }
+    
+    setValidationErrors(newValidationErrors);
+    
+    if (missingFields.length > 0) {
+      const missingText = missingFields.join(', ');
+      Alert.alert(
+        'Profile Incomplete', 
+        `Please complete your profile by adding:\n\n• ${missingText}\n\nYou need all three elements to continue: a profile photo, bio, and exactly 5 interests.`
+      );
       return;
     }
 
-    const profileData = {
-      ...formData,
-      interests: selectedInterests,
-      birthday: formData.birthday ? new Date(formData.birthday) : null,
-    };
+    setIsLoading(true);
 
-    if (existingProfile) {
-      updateProfileMutation.mutate(profileData);
-    } else {
-      createProfileMutation.mutate(profileData);
+    try {
+      const profileData = {
+        ...formData,
+        interests: selectedInterests,
+        // Include account information from user context
+        username: user?.username,
+        phoneNumber: user?.phoneNumber,
+        birthday: user?.birthday,
+        gender: user?.gender,
+        sexualOrientation: user?.sexuality,
+        userId: user?.id,
+        createdAt: existingProfile?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const success = await saveProfile(profileData);
+      
+      if (success) {
+        // Mark profile as completed
+        markProfileCompleted();
+        
+        Alert.alert(
+          'Profile Complete!', 
+          'Your profile has been successfully created. Welcome to Over Drinks!',
+          [
+            {
+              text: 'Get Started',
+              onPress: () => navigation.navigate('Home')
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to save profile. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (profileLoading) {
+  if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Loading...
+            {existingProfile ? 'Updating profile...' : 'Creating profile...'}
           </Text>
         </View>
       </SafeAreaView>
@@ -246,7 +305,7 @@ const ProfileCreationScreen = () => {
               {existingProfile ? 'Update Your Profile' : 'Complete Your Profile'}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Make a great first impression
+              Add your photo, interests, and bio to get started
             </Text>
           </View>
 
@@ -254,7 +313,13 @@ const ProfileCreationScreen = () => {
             {/* Photo Upload */}
             <View style={styles.photoSection}>
               <TouchableOpacity
-                style={[styles.photoContainer, { borderColor: colors.border }]}
+                style={[
+                  styles.photoContainer, 
+                  { 
+                    borderColor: validationErrors.photo ? '#ef4444' : colors.border,
+                    borderWidth: validationErrors.photo ? 2 : 2
+                  }
+                ]}
                 onPress={handleImagePicker}
               >
                 {profilePhoto ? (
@@ -273,144 +338,124 @@ const ProfileCreationScreen = () => {
                   +
                 </Text>
               </TouchableOpacity>
-              <Text style={[styles.photoInstruction, { color: colors.textSecondary }]}>
-                Tap to add your best photo
+              <Text style={[
+                styles.photoInstruction, 
+                { 
+                  color: validationErrors.photo ? '#ef4444' : colors.textSecondary,
+                  fontWeight: validationErrors.photo ? '600' : '400'
+                }
+              ]}>
+                {validationErrors.photo ? '⚠️ Profile photo required' : 'Tap to add your best photo'}
               </Text>
             </View>
 
-            {/* Form Fields */}
-            <Input
-              label="Username"
-              placeholder="YourUsername"
-              value={formData.username}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, username: text }))}
-            />
-
-            <Input
-              label="Phone Number"
-              placeholder="+1 (555) 123-4567"
-              value={formData.phoneNumber}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, phoneNumber: text }))}
-              keyboardType="phone-pad"
-            />
-
-            <Input
-              label="Birthday"
-              placeholder="YYYY-MM-DD"
-              value={formData.birthday}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, birthday: text }))}
-            />
-
-            <View style={styles.selectContainer}>
-              <Text style={[styles.selectLabel, { color: colors.text }]}>Gender</Text>
-              <View style={styles.selectRow}>
-                {['man', 'woman', 'non-binary', 'other'].map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.selectOption,
-                      {
-                        backgroundColor: formData.gender === option ? colors.primary : colors.muted,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                    onPress={() => setFormData(prev => ({ ...prev, gender: option }))}
-                  >
-                    <Text
-                      style={[
-                        styles.selectOptionText,
-                        {
-                          color: formData.gender === option ? colors.primaryForeground : colors.text,
-                        },
-                      ]}
-                    >
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.selectContainer}>
-              <Text style={[styles.selectLabel, { color: colors.text }]}>Sexual Orientation</Text>
-              <View style={styles.selectRow}>
-                {['straight', 'gay', 'lesbian', 'bisexual', 'pansexual', 'other'].map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.selectOption,
-                      {
-                        backgroundColor: formData.sexualOrientation === option ? colors.primary : colors.muted,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                    onPress={() => setFormData(prev => ({ ...prev, sexualOrientation: option }))}
-                  >
-                    <Text
-                      style={[
-                        styles.selectOptionText,
-                        {
-                          color: formData.sexualOrientation === option ? colors.primaryForeground : colors.text,
-                        },
-                      ]}
-                    >
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+            {/* Bio */}
+            <View style={styles.inputContainer}>
+              <Text style={[
+                styles.label, 
+                { 
+                  color: validationErrors.bio ? '#ef4444' : colors.text,
+                  fontWeight: validationErrors.bio ? '600' : '600'
+                }
+              ]}>
+                Bio {validationErrors.bio && '⚠️'}
+              </Text>
+              <TextArea
+                placeholder="Tell us about yourself... What makes you unique? What are you looking for?"
+                value={formData.bio}
+                onChangeText={handleBioChange}
+                style={[
+                  styles.bioInput,
+                  validationErrors.bio && { borderColor: '#ef4444', borderWidth: 1 }
+                ]}
+                maxLength={500}
+              />
+              <Text style={[
+                styles.characterCount, 
+                { 
+                  color: validationErrors.bio ? '#ef4444' : colors.textSecondary,
+                  fontWeight: validationErrors.bio ? '600' : '400'
+                }
+              ]}>
+                {validationErrors.bio ? 'Bio is required' : `${formData.bio.length}/500`}
+              </Text>
             </View>
 
             {/* Interests */}
-            <View style={styles.interestsContainer}>
-              <Text style={[styles.interestsLabel, { color: colors.text }]}>
-                Interests (Select up to 5)
+            <View style={styles.interestsSection}>
+              <Text style={[
+                styles.label, 
+                { 
+                  color: validationErrors.interests ? '#ef4444' : colors.text,
+                  fontWeight: validationErrors.interests ? '600' : '600'
+                }
+              ]}>
+                Select Your Interests ({selectedInterests.length}/5) {validationErrors.interests && '⚠️'}
               </Text>
-              <Text style={[styles.interestsSubtitle, { color: colors.textSecondary }]}>
-                Choose interests that best describe you
+              <Text style={[
+                styles.interestsSubtext, 
+                { 
+                  color: validationErrors.interests ? '#ef4444' : colors.textSecondary,
+                  fontWeight: validationErrors.interests ? '600' : '400'
+                }
+              ]}>
+                {validationErrors.interests 
+                  ? `Please select exactly 5 interests (${5 - selectedInterests.length} more needed)`
+                  : 'Choose exactly 5 interests that represent you'
+                }
               </Text>
-              <View style={[styles.interestsGrid, { backgroundColor: colors.muted + '30' }]}>
+              
+              <View style={styles.interestsGrid}>
                 {interests.map((interest) => (
                   <TouchableOpacity
                     key={interest.value}
                     style={[
-                      styles.interestButton,
+                      styles.interestChip,
                       {
                         backgroundColor: selectedInterests.includes(interest.value)
-                          ? colors.secondary
-                          : colors.card,
+                          ? colors.primary
+                          : (!selectedInterests.includes(interest.value) && selectedInterests.length >= 5)
+                          ? colors.muted
+                          : colors.muted,
                         borderColor: colors.border,
-                        opacity: !selectedInterests.includes(interest.value) && selectedInterests.length >= 5 ? 0.5 : 1,
+                        opacity: (!selectedInterests.includes(interest.value) && selectedInterests.length >= 5) ? 0.5 : 1,
                       },
                     ]}
                     onPress={() => toggleInterest(interest.value)}
                     disabled={!selectedInterests.includes(interest.value) && selectedInterests.length >= 5}
                   >
-                    <Text style={[styles.interestText, { color: colors.text }]}>
+                    <Text
+                      style={[
+                        styles.interestText,
+                        {
+                          color: selectedInterests.includes(interest.value)
+                            ? colors.primaryForeground
+                            : colors.text,
+                        },
+                      ]}
+                    >
                       {interest.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              {selectedInterests.length > 0 && (
-                <Text style={[styles.selectedCount, { color: colors.textSecondary }]}>
-                  Selected: {selectedInterests.length}/5
-                </Text>
-              )}
             </View>
 
-            <TextArea
-              placeholder="Tell us about yourself..."
-              value={formData.bio}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, bio: text }))}
-              style={styles.bioInput}
-            />
-
+            {/* Submit Button */}
             <Button
-              title={existingProfile ? 'Update Profile' : 'Enter the Speakeasy'}
+              title={
+                profilePhoto && formData.bio.trim() && selectedInterests.length === 5
+                  ? (existingProfile ? 'Update Profile' : 'Complete Profile ✓')
+                  : (existingProfile ? 'Update Profile' : 'Complete Profile')
+              }
               onPress={handleSubmit}
-              loading={createProfileMutation.isPending || updateProfileMutation.isPending}
-              style={styles.submitButton}
+              loading={isLoading}
+              style={[
+                styles.submitButton,
+                profilePhoto && formData.bio.trim() && selectedInterests.length === 5 && {
+                  backgroundColor: '#10b981', // Green when complete
+                }
+              ]}
             />
           </Card>
         </View>
@@ -427,7 +472,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 24,
+    padding: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -445,7 +490,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    fontFamily: 'serif',
+    fontFamily: 'Georgia',
     marginBottom: 8,
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 1 },
@@ -456,37 +501,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formCard: {
-    marginBottom: 24,
+    padding: 24,
   },
   photoSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   photoContainer: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    borderWidth: 4,
-    alignItems: 'center',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 2,
+    borderStyle: 'dashed',
     justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   photo: {
-    width: '100%',
-    height: '100%',
+    width: 116,
+    height: 116,
+    borderRadius: 58,
   },
   photoPlaceholder: {
-    fontSize: 32,
+    fontSize: 48,
   },
   addPhotoButton: {
     position: 'absolute',
-    bottom: -8,
-    right: -8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
+    bottom: 0,
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   addPhotoText: {
     fontSize: 20,
@@ -494,69 +541,48 @@ const styles = StyleSheet.create({
   },
   photoInstruction: {
     fontSize: 14,
-    marginTop: 8,
     textAlign: 'center',
   },
-  selectContainer: {
-    marginBottom: 16,
+  inputContainer: {
+    marginBottom: 24,
   },
-  selectLabel: {
+  label: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+    fontFamily: 'Georgia',
   },
-  selectRow: {
+  bioInput: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  characterCount: {
+    fontSize: 12,
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  interestsSection: {
+    marginBottom: 32,
+  },
+  interestsSubtext: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  interestsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  selectOption: {
+  interestChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  selectOptionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  interestsContainer: {
-    marginBottom: 16,
-  },
-  interestsLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  interestsSubtitle: {
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  interestsGrid: {
-    borderRadius: 8,
-    padding: 12,
-    maxHeight: 200,
-  },
-  interestButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 8,
-    marginRight: 8,
-    alignSelf: 'flex-start',
   },
   interestText: {
-    fontSize: 12,
-  },
-  selectedCount: {
-    fontSize: 12,
-    marginTop: 8,
-  },
-  bioInput: {
-    marginBottom: 24,
+    fontSize: 14,
+    fontWeight: '500',
   },
   submitButton: {
     width: '100%',

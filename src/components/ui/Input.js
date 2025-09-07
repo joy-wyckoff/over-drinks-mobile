@@ -69,7 +69,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
+    height: 44,
     minHeight: 44,
+    maxHeight: 44,
   },
   error: {
     fontSize: 14,
