@@ -37,10 +37,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const profileData = insertUserProfileSchema.parse({
+      
+      // Transform the birthday string to a Date object if provided
+      const transformedData = {
         ...req.body,
         userId,
-      });
+        birthday: req.body.birthday ? new Date(req.body.birthday) : null,
+      };
+      
+      const profileData = insertUserProfileSchema.parse(transformedData);
       
       const profile = await storage.createUserProfile(profileData);
       res.json(profile);
@@ -56,7 +61,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const profileData = insertUserProfileSchema.partial().parse(req.body);
+      
+      // Transform the birthday string to a Date object if provided
+      const transformedData = {
+        ...req.body,
+        birthday: req.body.birthday ? new Date(req.body.birthday) : undefined,
+      };
+      
+      const profileData = insertUserProfileSchema.partial().parse(transformedData);
       
       const profile = await storage.updateUserProfile(userId, profileData);
       res.json(profile);

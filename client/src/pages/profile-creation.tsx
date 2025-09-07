@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -95,6 +95,8 @@ export default function ProfileCreation() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [profilePhoto, setProfilePhoto] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check if user already has a profile
   const { data: existingProfile, isLoading: profileLoading } = useQuery<UserProfile>({
@@ -135,6 +137,7 @@ export default function ProfileCreation() {
       };
       form.reset(profileData);
       setSelectedInterests(existingProfile.interests || []);
+      setProfilePhoto(existingProfile.profilePhotoUrl || "");
     }
   }, [existingProfile, form]);
 
@@ -214,6 +217,24 @@ export default function ProfileCreation() {
     });
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Create a preview URL for the image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setProfilePhoto(result);
+        form.setValue("profilePhotoUrl", result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   const onSubmit = (data: any) => {
     const profileData = {
       ...data,
@@ -255,13 +276,14 @@ export default function ProfileCreation() {
 
           {/* Profile Creation Form */}
           <Card className="bg-card rounded-lg p-6 speakeasy-shadow space-y-6">
-            {/* Photo Upload Placeholder */}
+            {/* Photo Upload */}
             <div className="text-center">
               <div className="relative inline-block">
-                <div className="w-32 h-32 rounded-full bg-muted border-4 border-secondary/30 flex items-center justify-center overflow-hidden">
-                  {form.watch("profilePhotoUrl") ? (
+                <div className="w-32 h-32 rounded-full bg-muted border-4 border-secondary/30 flex items-center justify-center overflow-hidden cursor-pointer"
+                     onClick={triggerFileInput}>
+                  {profilePhoto || form.watch("profilePhotoUrl") ? (
                     <img 
-                      src={form.watch("profilePhotoUrl")} 
+                      src={profilePhoto || form.watch("profilePhotoUrl")} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
                     />
@@ -271,14 +293,23 @@ export default function ProfileCreation() {
                 </div>
                 <button 
                   type="button"
-                  className="absolute -bottom-2 -right-2 bg-secondary text-secondary-foreground w-8 h-8 rounded-full flex items-center justify-center"
+                  onClick={triggerFileInput}
+                  className="absolute -bottom-2 -right-2 bg-secondary text-secondary-foreground w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/90 transition-colors"
                   data-testid="button-photo-upload"
                 >
                   <i className="fas fa-plus text-sm"></i>
                 </button>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+                data-testid="input-photo-file"
+              />
               <p className="text-sm text-muted-foreground mt-2" data-testid="text-photo-instruction">
-                Add your best photo
+                Click to add your best photo
               </p>
             </div>
 
