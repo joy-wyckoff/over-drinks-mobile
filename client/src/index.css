@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0 0% 10%);
+  --foreground: hsl(40 25% 90%);
+  --card: hsl(0 0% 15%);
+  --card-foreground: hsl(40 20% 88%);
+  --popover: hsl(0 0% 15%);
+  --popover-foreground: hsl(40 20% 88%);
+  --primary: hsl(345 70% 35%);
+  --primary-foreground: hsl(40 25% 95%);
+  --secondary: hsl(42 87% 55%);
+  --secondary-foreground: hsl(0 0% 10%);
+  --muted: hsl(0 0% 20%);
+  --muted-foreground: hsl(40 15% 70%);
+  --accent: hsl(30 60% 45%);
+  --accent-foreground: hsl(40 25% 95%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(40 25% 95%);
+  --border: hsl(0 0% 25%);
+  --input: hsl(0 0% 18%);
+  --ring: hsl(42 87% 55%);
+  --chart-1: hsl(42 87% 55%);
+  --chart-2: hsl(30 60% 45%);
+  --chart-3: hsl(345 70% 35%);
+  --chart-4: hsl(0 0% 20%);
+  --chart-5: hsl(40 15% 70%);
+  --sidebar: hsl(0 0% 15%);
+  --sidebar-foreground: hsl(40 20% 88%);
+  --sidebar-primary: hsl(345 70% 35%);
+  --sidebar-primary-foreground: hsl(40 25% 95%);
+  --sidebar-accent: hsl(30 60% 45%);
+  --sidebar-accent-foreground: hsl(40 25% 95%);
+  --sidebar-border: hsl(0 0% 25%);
+  --sidebar-ring: hsl(42 87% 55%);
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  --radius: 0.75rem;
+  --shadow-2xs: 0px 2px 0px 0px hsl(42 87% 55% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(42 87% 55% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(42 87% 55% / 0.00), 0px 1px 2px -1px hsl(42 87% 55% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(42 87% 55% / 0.00), 0px 1px 2px -1px hsl(42 87% 55% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(42 87% 55% / 0.00), 0px 2px 4px -1px hsl(42 87% 55% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(42 87% 55% / 0.00), 0px 4px 6px -1px hsl(42 87% 55% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(42 87% 55% / 0.00), 0px 8px 10px -1px hsl(42 87% 55% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(42 87% 55% / 0.00);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: hsl(0 0% 0%);
+  --foreground: hsl(40 25% 95%);
+  --card: hsl(0 0% 8%);
+  --card-foreground: hsl(40 20% 92%);
+  --popover: hsl(0 0% 8%);
+  --popover-foreground: hsl(40 20% 92%);
+  --primary: hsl(345 70% 40%);
+  --primary-foreground: hsl(40 25% 98%);
+  --secondary: hsl(42 87% 60%);
+  --secondary-foreground: hsl(0 0% 5%);
+  --muted: hsl(0 0% 12%);
+  --muted-foreground: hsl(40 15% 75%);
+  --accent: hsl(30 60% 50%);
+  --accent-foreground: hsl(40 25% 98%);
+  --destructive: hsl(0 84% 65%);
+  --destructive-foreground: hsl(40 25% 98%);
+  --border: hsl(0 0% 18%);
+  --input: hsl(0 0% 12%);
+  --ring: hsl(42 87% 60%);
+  --sidebar: hsl(0 0% 8%);
+  --sidebar-foreground: hsl(40 20% 92%);
+  --sidebar-primary: hsl(345 70% 40%);
+  --sidebar-primary-foreground: hsl(40 25% 98%);
+  --sidebar-accent: hsl(30 60% 50%);
+  --sidebar-accent-foreground: hsl(40 25% 98%);
+  --sidebar-border: hsl(0 0% 18%);
+  --sidebar-ring: hsl(42 87% 60%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Art Deco / Speakeasy Custom Styles */
+.art-deco-border {
+  border-image: linear-gradient(45deg, var(--secondary), var(--accent), var(--secondary)) 1;
+  border-width: 2px;
+  border-style: solid;
+}
+
+.speakeasy-shadow {
+  box-shadow: 0 8px 32px hsla(42, 87%, 55%, 0.15), 0 4px 16px hsla(0, 0%, 0%, 0.3);
+}
+
+.vintage-glow {
+  text-shadow: 0 0 10px hsla(42, 87%, 55%, 0.3);
+}
+
+.wine-glass-icon {
+  filter: drop-shadow(0 0 8px hsla(42, 87%, 55%, 0.4));
+}
+
+/* Font Families */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Custom animations for speakeasy theme */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Hover effects for cards */
+.speakeasy-card-hover {
+  transition: all 0.3s ease;
+}
+
+.speakeasy-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px hsla(42, 87%, 55%, 0.2), 0 6px 20px hsla(0, 0%, 0%, 0.4);
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary);
+}
