@@ -3,11 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
   ScrollView,
   Dimensions,
   Alert,
   TouchableOpacity,
+  Animated,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +26,14 @@ const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [containerHovered, setContainerHovered] = useState(false);
+  const [containerTouched, setContainerTouched] = useState(false);
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [createAccountPressed, setCreateAccountPressed] = useState(false);
+  const [enterButtonHovered, setEnterButtonHovered] = useState(false);
+  const [createAccountHovered, setCreateAccountHovered] = useState(false);
+  const [forgotPasswordHovered, setForgotPasswordHovered] = useState(false);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -35,7 +43,7 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      await login(username, password, rememberMe);
+      await login(username, password, false);
     } catch (error) {
       Alert.alert('Login Failed', error.message || 'Invalid username or password');
     } finally {
@@ -48,126 +56,200 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      'Forgot Password',
-      'Password reset functionality would be implemented here. For now, please contact support.',
-      [{ text: 'OK' }]
-    );
+    navigation.navigate('ForgotPassword');
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <ImageBackground
-        source={require('../../assets/background.png')}
-        style={styles.backgroundImage}
-        resizeMode="cover"
+      <LinearGradient
+        colors={['#1A0D0F', '#281218', '#381B22']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.backgroundGradient}
       >
-        <LinearGradient
-          colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.4)']}
-          style={styles.gradient}
-        >
-          <SafeAreaView style={styles.safeArea}>
-            <View style={styles.content}>
-              {/* Header */}
-              <View style={styles.header}>
-                <Button
-                  title="← Back"
-                  onPress={() => navigation.goBack()}
-                  variant="ghost"
-                  style={styles.backButton}
-                />
-                <Text style={[styles.title, { color: colors.text }]}>
-                  Welcome Back
-                </Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                  Sign in to continue your journey
-                </Text>
+        <SafeAreaView style={styles.safeArea}>
+          <View 
+            style={styles.content}
+            onTouchStart={() => {
+              setContainerTouched(false);
+              setUsernameFocused(false);
+              setPasswordFocused(false);
+            }}
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              {/* Back Button */}
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.navigate('Landing')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="arrow-back" size={24} color="#E6C547" />
+                <Text style={styles.backButtonText}>Back</Text>
+              </TouchableOpacity>
+              
+              <Text style={styles.appTitle}>Over Drinks</Text>
+              <View style={styles.wineGlassesContainer}>
+                <Ionicons name="wine" size={24} color="#8B0000" />
+                <View style={styles.dashedLine} />
+                <Ionicons name="wine" size={24} color="#8B0000" />
               </View>
+              <Text style={styles.tagline}>
+                Where connections happen face to face
+              </Text>
+            </View>
 
-              {/* Login Form */}
-              <View style={styles.form}>
-                <View style={styles.inputContainer}>
-                  <Text style={[styles.label, { color: colors.text }]}>
-                    Username
-                  </Text>
-                  <Input
-                    value={username}
-                    onChangeText={setUsername}
-                    placeholder="Enter your username"
-                    style={styles.input}
-                  />
-                </View>
+            {/* Login Container */}
+            <View
+              style={[
+                styles.loginContainerWrapper,
+                (containerHovered || containerTouched) && styles.loginContainerWrapperHovered
+              ]}
+            >
+              <View
+                style={[
+                  styles.loginContainer,
+                  (containerHovered || containerTouched) && styles.loginContainerHovered
+                ]}
+                onMouseEnter={() => setContainerHovered(true)}
+                onMouseLeave={() => setContainerHovered(false)}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setContainerTouched(true);
+                }}
+              >
+              <LinearGradient
+                colors={['#000000', '#1a1a1a']}
+                style={styles.containerGradient}
+              >
+                <Text style={styles.containerTitle}>
+                  Sign in to discover tonight's connections
+                </Text>
 
-                <View style={styles.inputContainer}>
-                  <Text style={[styles.label, { color: colors.text }]}>
-                    Password
-                  </Text>
-                  <Input
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Enter your password"
-                    secureTextEntry
-                    style={styles.input}
-                  />
-                </View>
-
-                {/* Remember Me Checkbox */}
-                <TouchableOpacity
-                  style={styles.rememberMeContainer}
-                  onPress={() => setRememberMe(!rememberMe)}
-                >
+                {/* Username Input */}
+                <View style={styles.inputGroup} onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setContainerTouched(true);
+                }}>
+                  <Text style={styles.inputLabel}>Username</Text>
                   <View style={[
-                    styles.checkbox,
-                    {
-                      backgroundColor: rememberMe ? colors.primary : 'transparent',
-                      borderColor: rememberMe ? colors.primary : colors.border,
-                    }
+                    styles.inputWrapper,
+                    usernameFocused && styles.inputWrapperFocused
                   ]}>
-                    {rememberMe && (
-                      <Ionicons name="checkmark" size={16} color={colors.primaryForeground} />
-                    )}
+                    <TextInput
+                      value={username}
+                      onChangeText={setUsername}
+                      placeholder="Enter your username"
+                      placeholderTextColor="#E6C547"
+                      style={styles.inputField}
+                      autoCapitalize="none"
+                      autoComplete="off"
+                      textContentType="none"
+                      autoCorrect={false}
+                      onFocus={() => setUsernameFocused(true)}
+                      onBlur={() => setUsernameFocused(false)}
+                    />
                   </View>
-                  <Text style={[styles.rememberMeText, { color: colors.text }]}>
-                    Remember me
-                  </Text>
+                </View>
+
+                {/* Password Input */}
+                <View style={styles.inputGroup} onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setContainerTouched(true);
+                }}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    passwordFocused && styles.inputWrapperFocused
+                  ]}>
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#E6C547"
+                      style={styles.inputField}
+                      secureTextEntry
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                    />
+                  </View>
+                </View>
+
+                {/* Enter Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.enterButton,
+                    enterButtonHovered && styles.enterButtonHovered
+                  ]}
+                  onPressIn={(e) => {
+                    e.stopPropagation();
+                    setEnterButtonHovered(true);
+                    setContainerTouched(true);
+                  }}
+                  onPressOut={() => setEnterButtonHovered(false)}
+                  onPress={handleLogin}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                      colors={['#E6C547', '#D4AF37', '#B8860B']}
+                    style={styles.enterButtonGradient}
+                  >
+                    <Text style={styles.enterButtonText}>Enter</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
 
-                <Button
-                  title="Sign In"
-                  onPress={handleLogin}
-                  loading={loading}
-                  style={styles.loginButton}
-                />
+                {/* Create Account Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.createAccountButton,
+                    createAccountHovered && styles.createAccountButtonHovered,
+                    createAccountPressed && styles.createAccountButtonPressed
+                  ]}
+                  onPressIn={(e) => {
+                    e.stopPropagation();
+                    setCreateAccountHovered(true);
+                    setCreateAccountPressed(true);
+                    setContainerTouched(true);
+                  }}
+                  onPressOut={() => {
+                    setCreateAccountHovered(false);
+                    setCreateAccountPressed(false);
+                  }}
+                  onPress={handleCreateAccount}
+                  activeOpacity={1.0}
+                >
+                  <Text style={[
+                    styles.createAccountButtonText,
+                    createAccountHovered && styles.createAccountButtonTextHovered,
+                    createAccountPressed && styles.createAccountButtonTextPressed
+                  ]}>Create Account</Text>
+                </TouchableOpacity>
 
                 {/* Forgot Password */}
-                <Button
-                  title="Forgot Password?"
+                <TouchableOpacity
+                  style={styles.forgotPasswordContainer}
+                  onPressIn={(e) => {
+                    e.stopPropagation();
+                    setForgotPasswordHovered(true);
+                    setContainerTouched(true);
+                  }}
+                  onPressOut={() => setForgotPasswordHovered(false)}
                   onPress={handleForgotPassword}
-                  variant="ghost"
-                  style={styles.forgotButton}
-                />
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.forgotPasswordText,
+                    forgotPasswordHovered && styles.forgotPasswordTextHovered
+                  ]}>
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
+              </LinearGradient>
               </View>
-
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-                <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
-                  Don't have an account?
-                </Text>
-                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              </View>
-
-              {/* Create Account */}
-              <Button
-                title="Create New Account"
-                onPress={handleCreateAccount}
-                variant="secondary"
-                style={styles.createButton}
-              />
             </View>
-          </SafeAreaView>
-        </LinearGradient>
-      </ImageBackground>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
     </ScrollView>
   );
 };
@@ -176,12 +258,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  backgroundImage: {
+  backgroundGradient: {
     flex: 1,
     minHeight: height,
-  },
-  gradient: {
-    flex: 1,
   },
   safeArea: {
     flex: 1,
@@ -196,82 +275,222 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
     width: '100%',
+    position: 'relative',
   },
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    fontFamily: 'Georgia',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  form: {
-    width: '100%',
-    maxWidth: 400,
-    marginBottom: 32,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    fontFamily: 'Georgia',
-  },
-  input: {
-    width: '100%',
-  },
-  rememberMeContainer: {
+    position: 'absolute',
+    left: 0,
+    top: -40,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  rememberMeText: {
-    fontSize: 14,
+  backButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    marginLeft: 4,
     fontWeight: '500',
   },
-  loginButton: {
-    width: '100%',
+  appTitle: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    fontFamily: 'Georgia',
+    color: '#E6C547',
     marginBottom: 16,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
-  forgotButton: {
-    alignSelf: 'center',
-  },
-  divider: {
+  wineGlassesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 32,
+    marginBottom: 16,
+  },
+  dashedLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#E6C547',
+    marginHorizontal: 8,
+  },
+  tagline: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  loginContainerWrapper: {
     width: '100%',
     maxWidth: 400,
+    shadowColor: '#E6C547',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 15,
   },
-  dividerLine: {
+  loginContainerWrapperHovered: {
+    shadowColor: '#E6C547',
+    shadowOpacity: 0.8,
+    shadowRadius: 30,
+    elevation: 30,
+  },
+  loginContainer: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    overflow: 'hidden',
+    shadowColor: '#E6C547',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 25,
+    elevation: 25,
+  },
+  loginContainerHovered: {
+    transform: [{ scale: 1.02 }],
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    shadowColor: '#E6C547',
+    shadowOpacity: 1.0,
+    shadowRadius: 40,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 40,
+  },
+  containerGradient: {
+    padding: 32,
+  },
+  containerTitle: {
+    fontSize: 20,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    textAlign: 'center',
+    marginBottom: 32,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  inputWrapper: {
+    height: 48,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  inputWrapperFocused: {
+    borderColor: '#E6C547',
+    borderWidth: 2,
+    shadowColor: '#E6C547',
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  inputPlaceholder: {
+    fontSize: 16,
+    color: '#E6C547',
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
+  },
+  inputField: {
+    fontSize: 16,
+    color: '#E6C547',
+    fontFamily: 'Georgia',
     flex: 1,
-    height: 1,
   },
-  dividerText: {
-    marginHorizontal: 16,
+  enterButton: {
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  enterButtonHovered: {
+    transform: [{ scale: 1.05 }],
+  },
+  enterButtonGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  enterButtonText: {
+    fontSize: 18,
+    fontFamily: 'Georgia',
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  createAccountButton: {
+    marginBottom: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createAccountButtonHovered: {
+    backgroundColor: '#E6C547',
+    borderColor: '#E6C547',
+  },
+  createAccountButtonPressed: {
+    backgroundColor: '#E6C547',
+    borderColor: '#E6C547',
+  },
+  createAccountButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createAccountButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    fontWeight: '600',
+  },
+  createAccountButtonTextHovered: {
+    color: '#000000',
+  },
+  createAccountButtonTextPressed: {
+    color: '#000000',
+  },
+  forgotPasswordContainer: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  forgotPasswordText: {
     fontSize: 14,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    textDecorationLine: 'underline',
   },
-  createButton: {
-    width: '100%',
-    maxWidth: 400,
+  forgotPasswordTextHovered: {
+    color: '#F5F5DC',
+    fontSize: 15,
   },
 });
 

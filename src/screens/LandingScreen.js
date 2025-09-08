@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,56 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
 const LandingScreen = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const [displayedText, setDisplayedText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showCursor, setShowCursor] = useState(true);
+  
+  const fullText = "Where connections happen over cocktails...";
+  const typingSpeed = 100; // milliseconds per character
+
+  // Restart animation when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset animation state
+      setDisplayedText('');
+      setCurrentIndex(0);
+      setShowCursor(true);
+      
+      let timeoutId;
+      let cursorIntervalId;
+      let currentCharIndex = 0;
+      
+      // Typewriter effect
+      const typeNextChar = () => {
+        if (currentCharIndex < fullText.length) {
+          setDisplayedText(fullText.substring(0, currentCharIndex + 1));
+          currentCharIndex++;
+          timeoutId = setTimeout(typeNextChar, typingSpeed);
+        }
+      };
+      
+      // Start typing animation
+      timeoutId = setTimeout(typeNextChar, typingSpeed);
+      
+      // Blinking cursor effect
+      cursorIntervalId = setInterval(() => {
+        setShowCursor(prev => !prev);
+      }, 500);
+      
+      // Cleanup function
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (cursorIntervalId) clearInterval(cursorIntervalId);
+      };
+    }, [])
+  );
 
   const handleLogin = () => {
     navigation.navigate('Login');
@@ -48,8 +91,9 @@ const LandingScreen = () => {
                   resizeMode="contain"
                 />
                 <View style={styles.taglineWrapper}>
-                  <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-                    Where connections happen over cocktails
+                  <Text style={[styles.tagline, { color: '#ffffff' }]}>
+                    {displayedText}
+                    {currentIndex < fullText.length && showCursor && <Text style={styles.cursor}>|</Text>}
                   </Text>
                 </View>
               </View>
@@ -123,22 +167,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   taglineWrapper: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
     marginBottom: 32,
   },
   tagline: {
-    fontSize: 16,
-    fontWeight: '400',
-    fontFamily: 'Georgia',
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'Times New Roman',
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.9)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
+  },
+  cursor: {
+    color: '#ffffff',
+    fontWeight: '600',
+    opacity: 0.8,
+    fontFamily: 'Times New Roman',
+    fontSize: 18,
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
   loginContainer: {
     width: '100%',

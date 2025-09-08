@@ -9,22 +9,28 @@ import {
   Alert,
   TouchableOpacity,
   Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
 const AccountCreationScreen = ({ navigation }) => {
-  const { colors } = useTheme();
   const { createAccount } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
+  const [firstNameFocused, setFirstNameFocused] = useState(false);
+  const [lastNameFocused, setLastNameFocused] = useState(false);
+  const [birthdayFocused, setBirthdayFocused] = useState(false);
+  
   const [formData, setFormData] = useState({
     email: '',
     phoneNumber: '',
@@ -40,561 +46,321 @@ const AccountCreationScreen = ({ navigation }) => {
 
   const [errors, setErrors] = useState({});
   const [validationStatus, setValidationStatus] = useState({
-    email: 'idle', // 'idle', 'checking', 'valid', 'invalid'
+    email: 'idle',
     phoneNumber: 'idle',
     username: 'idle',
     password: 'idle',
     confirmPassword: 'idle',
     birthday: 'idle',
     gender: 'idle',
-    sexuality: 'idle'
+    sexuality: 'idle',
   });
+
+  const [validationMessages, setValidationMessages] = useState({
+    email: '',
+    phoneNumber: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+    birthday: '',
+  });
+
+  const [selectedCountry, setSelectedCountry] = useState({ name: 'United States', code: '+1', flag: '🇺🇸' });
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState({
-    month: '',
-    day: '',
-    year: ''
-  });
-  const [selectedCountry, setSelectedCountry] = useState({
-    code: '+1',
-    name: 'United States',
-    flag: '🇺🇸'
-  });
+  const [showGenderPicker, setShowGenderPicker] = useState(false);
+  const [showSexualityPicker, setShowSexualityPicker] = useState(false);
 
-  // Bad words filter for username
-  const badWords = ['admin', 'root', 'test', 'user', 'guest', 'null', 'undefined', 'fuck', 'shit', 'damn', 'bitch', 'ass', 'hell', 'crap', 'stupid', 'idiot', 'dumb', 'loser', 'hate', 'kill', 'die', 'dead', 'sex', 'porn', 'nude', 'naked', 'fuck', 'fucking', 'fucked', 'shit', 'shitting', 'shitted', 'damn', 'damned', 'bitch', 'bitches', 'bitching', 'ass', 'asses', 'asshole', 'hell', 'hellish', 'crap', 'crappy', 'stupid', 'stupidity', 'idiot', 'idiotic', 'dumb', 'dumber', 'dumbest', 'loser', 'losing', 'hate', 'hating', 'hated', 'kill', 'killing', 'killed', 'die', 'dying', 'died', 'dead', 'death', 'sex', 'sexual', 'porn', 'pornographic', 'nude', 'nudity', 'naked', 'nakedness'];
-
-  // Country data for phone codes
   const countries = [
-    { code: '+1', name: 'United States', flag: '🇺🇸' },
-    { code: '+1', name: 'Canada', flag: '🇨🇦' },
-    { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
-    { code: '+33', name: 'France', flag: '🇫🇷' },
-    { code: '+49', name: 'Germany', flag: '🇩🇪' },
-    { code: '+39', name: 'Italy', flag: '🇮🇹' },
-    { code: '+34', name: 'Spain', flag: '🇪🇸' },
-    { code: '+31', name: 'Netherlands', flag: '🇳🇱' },
-    { code: '+46', name: 'Sweden', flag: '🇸🇪' },
-    { code: '+47', name: 'Norway', flag: '🇳🇴' },
-    { code: '+45', name: 'Denmark', flag: '🇩🇰' },
-    { code: '+41', name: 'Switzerland', flag: '🇨🇭' },
-    { code: '+43', name: 'Austria', flag: '🇦🇹' },
-    { code: '+32', name: 'Belgium', flag: '🇧🇪' },
-    { code: '+351', name: 'Portugal', flag: '🇵🇹' },
-    { code: '+353', name: 'Ireland', flag: '🇮🇪' },
-    { code: '+358', name: 'Finland', flag: '🇫🇮' },
-    { code: '+48', name: 'Poland', flag: '🇵🇱' },
-    { code: '+420', name: 'Czech Republic', flag: '🇨🇿' },
-    { code: '+36', name: 'Hungary', flag: '🇭🇺' },
-    { code: '+385', name: 'Croatia', flag: '🇭🇷' },
-    { code: '+386', name: 'Slovenia', flag: '🇸🇮' },
-    { code: '+421', name: 'Slovakia', flag: '🇸🇰' },
-    { code: '+370', name: 'Lithuania', flag: '🇱🇹' },
-    { code: '+371', name: 'Latvia', flag: '🇱🇻' },
-    { code: '+372', name: 'Estonia', flag: '🇪🇪' },
-    { code: '+7', name: 'Russia', flag: '🇷🇺' },
-    { code: '+380', name: 'Ukraine', flag: '🇺🇦' },
-    { code: '+375', name: 'Belarus', flag: '🇧🇾' },
-    { code: '+370', name: 'Lithuania', flag: '🇱🇹' },
-    { code: '+371', name: 'Latvia', flag: '🇱🇻' },
-    { code: '+372', name: 'Estonia', flag: '🇪🇪' },
-    { code: '+81', name: 'Japan', flag: '🇯🇵' },
-    { code: '+82', name: 'South Korea', flag: '🇰🇷' },
-    { code: '+86', name: 'China', flag: '🇨🇳' },
-    { code: '+852', name: 'Hong Kong', flag: '🇭🇰' },
-    { code: '+65', name: 'Singapore', flag: '🇸🇬' },
-    { code: '+60', name: 'Malaysia', flag: '🇲🇾' },
-    { code: '+66', name: 'Thailand', flag: '🇹🇭' },
-    { code: '+63', name: 'Philippines', flag: '🇵🇭' },
-    { code: '+62', name: 'Indonesia', flag: '🇮🇩' },
-    { code: '+84', name: 'Vietnam', flag: '🇻🇳' },
-    { code: '+91', name: 'India', flag: '🇮🇳' },
-    { code: '+92', name: 'Pakistan', flag: '🇵🇰' },
-    { code: '+880', name: 'Bangladesh', flag: '🇧🇩' },
-    { code: '+94', name: 'Sri Lanka', flag: '🇱🇰' },
-    { code: '+977', name: 'Nepal', flag: '🇳🇵' },
-    { code: '+975', name: 'Bhutan', flag: '🇧🇹' },
-    { code: '+93', name: 'Afghanistan', flag: '🇦🇫' },
-    { code: '+98', name: 'Iran', flag: '🇮🇷' },
-    { code: '+964', name: 'Iraq', flag: '🇮🇶' },
-    { code: '+965', name: 'Kuwait', flag: '🇰🇼' },
-    { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦' },
-    { code: '+971', name: 'UAE', flag: '🇦🇪' },
-    { code: '+974', name: 'Qatar', flag: '🇶🇦' },
-    { code: '+973', name: 'Bahrain', flag: '🇧🇭' },
-    { code: '+968', name: 'Oman', flag: '🇴🇲' },
-    { code: '+965', name: 'Kuwait', flag: '🇰🇼' },
-    { code: '+972', name: 'Israel', flag: '🇮🇱' },
-    { code: '+970', name: 'Palestine', flag: '🇵🇸' },
-    { code: '+962', name: 'Jordan', flag: '🇯🇴' },
-    { code: '+961', name: 'Lebanon', flag: '🇱🇧' },
-    { code: '+963', name: 'Syria', flag: '🇸🇾' },
-    { code: '+90', name: 'Turkey', flag: '🇹🇷' },
-    { code: '+20', name: 'Egypt', flag: '🇪🇬' },
-    { code: '+27', name: 'South Africa', flag: '🇿🇦' },
-    { code: '+234', name: 'Nigeria', flag: '🇳🇬' },
-    { code: '+254', name: 'Kenya', flag: '🇰🇪' },
-    { code: '+256', name: 'Uganda', flag: '🇺🇬' },
-    { code: '+255', name: 'Tanzania', flag: '🇹🇿' },
-    { code: '+250', name: 'Rwanda', flag: '🇷🇼' },
-    { code: '+251', name: 'Ethiopia', flag: '🇪🇹' },
-    { code: '+249', name: 'Sudan', flag: '🇸🇩' },
-    { code: '+218', name: 'Libya', flag: '🇱🇾' },
-    { code: '+216', name: 'Tunisia', flag: '🇹🇳' },
-    { code: '+213', name: 'Algeria', flag: '🇩🇿' },
-    { code: '+212', name: 'Morocco', flag: '🇲🇦' },
-    { code: '+55', name: 'Brazil', flag: '🇧🇷' },
-    { code: '+54', name: 'Argentina', flag: '🇦🇷' },
-    { code: '+56', name: 'Chile', flag: '🇨🇱' },
-    { code: '+57', name: 'Colombia', flag: '🇨🇴' },
-    { code: '+51', name: 'Peru', flag: '🇵🇪' },
-    { code: '+58', name: 'Venezuela', flag: '🇻🇪' },
-    { code: '+52', name: 'Mexico', flag: '🇲🇽' },
-    { code: '+1', name: 'United States', flag: '🇺🇸' },
-    { code: '+1', name: 'Canada', flag: '🇨🇦' },
-    { code: '+61', name: 'Australia', flag: '🇦🇺' },
-    { code: '+64', name: 'New Zealand', flag: '🇳🇿' }
+    { name: 'United States', code: '+1', flag: '🇺🇸' },
+    { name: 'Canada', code: '+1', flag: '🇨🇦' },
+    { name: 'United Kingdom', code: '+44', flag: '🇬🇧' },
+    { name: 'Australia', code: '+61', flag: '🇦🇺' },
+    { name: 'Germany', code: '+49', flag: '🇩🇪' },
+    { name: 'France', code: '+33', flag: '🇫🇷' },
+    { name: 'Spain', code: '+34', flag: '🇪🇸' },
+    { name: 'Italy', code: '+39', flag: '🇮🇹' },
   ];
 
-  // Email validation
+  const genderOptions = ['Male', 'Female', 'Non-binary', 'Other'];
+  const sexualityOptions = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Other'];
+
+  // Bad words filter for username
+  const badWords = ['admin', 'root', 'test', 'user', 'guest', 'null', 'undefined', 'fuck', 'shit', 'damn', 'bitch', 'ass', 'hell', 'crap', 'stupid', 'idiot', 'dumb', 'loser', 'hate', 'kill', 'die', 'dead', 'sex', 'porn', 'nude', 'naked'];
+
   const validateEmail = (email) => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Phone number validation and formatting
-  const formatPhoneNumber = (phoneNumber) => {
-    const cleaned = phoneNumber.replace(/\D/g, '');
-    if (cleaned.length <= 3) {
-      return cleaned;
-    } else if (cleaned.length <= 6) {
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
-    } else {
-      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-    }
+  const validatePhoneNumber = (phone) => {
+    const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/;
+    return phoneRegex.test(phone);
   };
 
-  const validatePhoneNumber = (phoneNumber) => {
-    const cleaned = phoneNumber.replace(/\D/g, '');
+  const validatePhoneNumberDigits = (phone) => {
+    const cleaned = phone.replace(/\D/g, '');
     return cleaned.length === 10;
   };
 
-  const getFullPhoneNumber = () => {
-    const cleaned = formData.phoneNumber.replace(/\D/g, '');
-    return `${selectedCountry.code}${cleaned}`;
-  };
-
-  // Password validation
-  const validatePasswordStrength = (password) => {
-    const hasMinLength = password.length >= 8;
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  const validateBirthdayFormat = (birthday) => {
+    const birthdayRegex = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+    if (!birthdayRegex.test(birthday)) return false;
     
-    return {
-      hasMinLength,
-      hasUppercase,
-      hasNumber,
-      hasSpecialChar,
-      isValid: hasMinLength && hasUppercase && hasNumber && hasSpecialChar
-    };
-  };
-
-  const getPasswordStrengthMessage = (password) => {
-    const strength = validatePasswordStrength(password);
-    const missing = [];
+    const [month, day, year] = birthday.split('/').map(num => parseInt(num));
     
-    if (!strength.hasMinLength) missing.push('8 characters');
-    if (!strength.hasUppercase) missing.push('1 uppercase letter');
-    if (!strength.hasNumber) missing.push('1 number');
-    if (!strength.hasSpecialChar) missing.push('1 special symbol');
+    // Check month (1-12, no 00)
+    if (month < 1 || month > 12) return false;
     
-    return missing.length > 0 ? `Missing: ${missing.join(', ')}` : 'Password is strong!';
-  };
-
-  // Birthday formatting
-  const formatBirthday = (value) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length <= 2) {
-      return cleaned;
-    } else if (cleaned.length <= 4) {
-      return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
-    } else {
-      return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 4)}-${cleaned.slice(4, 8)}`;
+    // Check day (1-31, no 00)
+    if (day < 1 || day > 31) return false;
+    
+    // Check year (reasonable range)
+    const currentYear = new Date().getFullYear();
+    if (year < 1900 || year > currentYear) return false;
+    
+    // Check if date actually exists
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+      return false;
     }
-  };
-
-  // Username validation
-  const validateUsername = (username) => {
-    const usernameRegex = /^[a-zA-Z0-9._]+$/;
-    return usernameRegex.test(username) && username.length >= 3 && username.length <= 20;
+    
+    return true;
   };
 
   const containsBadWords = (username) => {
     const lowerUsername = username.toLowerCase();
-    return badWords.some(word => lowerUsername.includes(word));
+    return badWords.some(word => lowerUsername.includes(word.toLowerCase()));
   };
 
-  // Date picker functions
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const getDaysInMonth = (month, year) => {
-    return new Date(year, month, 0).getDate();
+  const validateUsername = (username) => {
+    const usernameRegex = /^[a-zA-Z0-9._]+$/;
+    return usernameRegex.test(username) && username.length >= 3;
   };
 
-  const generateYears = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let i = currentYear - 100; i <= currentYear - 13; i++) {
-      years.push(i);
-    }
-    return years.reverse();
+  const validatePassword = (password) => {
+    return password.length >= 8 && 
+           /[A-Z]/.test(password) && 
+           /[0-9]/.test(password) && 
+           /[^A-Za-z0-9]/.test(password);
   };
 
-  const handleDateSelect = () => {
-    if (selectedDate.month && selectedDate.day && selectedDate.year) {
-      const monthNum = months.indexOf(selectedDate.month) + 1;
-      const formattedDate = `${monthNum.toString().padStart(2, '0')}-${selectedDate.day.padStart(2, '0')}-${selectedDate.year}`;
-      setFormData(prev => ({ ...prev, birthday: formattedDate }));
-      setShowDatePicker(false);
-    }
-  };
-
-  // Check for duplicates in existing accounts
   const checkForDuplicates = async (field, value) => {
-    if (!value.trim()) return;
-    
-    setValidationStatus(prev => ({ ...prev, [field]: 'checking' }));
-    
     try {
       const accountsData = await AsyncStorage.getItem('userAccounts');
-      const accounts = accountsData ? JSON.parse(accountsData) : [];
-      
-      let isDuplicate = false;
-      let isValidFormat = false;
-      
-      if (field === 'email') {
-        isValidFormat = validateEmail(value);
-        isDuplicate = accounts.some(account => 
-          account.email.toLowerCase() === value.toLowerCase()
-        );
-      } else if (field === 'phoneNumber') {
-        isValidFormat = validatePhoneNumber(value);
-        const cleaned = value.replace(/\D/g, '');
-        const fullPhone = `${selectedCountry.code}${cleaned}`;
-        isDuplicate = accounts.some(account => 
-          account.phoneNumber === fullPhone
-        );
-      } else if (field === 'username') {
-        isValidFormat = validateUsername(value) && !containsBadWords(value);
-        isDuplicate = accounts.some(account => 
-          account.username.toLowerCase() === value.toLowerCase()
-        );
+      if (accountsData) {
+        const accounts = JSON.parse(accountsData);
+        const exists = accounts.some(account => {
+          if (field === 'email') {
+            return account.email && account.email.toLowerCase().trim() === value.toLowerCase().trim();
+          } else if (field === 'phoneNumber') {
+            const cleaned = value.replace(/\D/g, '');
+            const fullPhone = `${selectedCountry.code}${cleaned}`;
+            return account.phoneNumber && account.phoneNumber === fullPhone;
+          } else if (field === 'username') {
+            return account.username && account.username.toLowerCase().trim() === value.toLowerCase().trim();
+          }
+          return false;
+        });
+        return exists;
       }
-      
-      if (!isValidFormat) {
-        setValidationStatus(prev => ({ ...prev, [field]: 'invalid' }));
-      } else if (isDuplicate) {
-        setErrors(prev => ({ 
-          ...prev, 
-          [field]: `${field === 'email' ? 'Email' : field === 'phoneNumber' ? 'Phone number' : 'Username'} is already taken` 
-        }));
-        setValidationStatus(prev => ({ ...prev, [field]: 'invalid' }));
-      } else {
-        setErrors(prev => ({ ...prev, [field]: '' }));
-        setValidationStatus(prev => ({ ...prev, [field]: 'valid' }));
-      }
+      return false;
     } catch (error) {
       console.error('Error checking duplicates:', error);
-      setValidationStatus(prev => ({ ...prev, [field]: 'idle' }));
+      return false;
     }
   };
 
   const updateFormData = (field, value) => {
-    let processedValue = value;
+    setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Format phone number as user types
-    if (field === 'phoneNumber') {
-      processedValue = formatPhoneNumber(value);
-    }
-    
-    // Format birthday as user types
-    if (field === 'birthday') {
-      processedValue = formatBirthday(value);
-    }
-    
-    // Filter username to only allow letters, numbers, dots, and underscores
-    if (field === 'username') {
-      processedValue = value.replace(/[^a-zA-Z0-9._]/g, '');
-    }
-    
-    setFormData(prev => ({ ...prev, [field]: processedValue }));
-    
-    // Clear error when user starts typing
+    // Clear error for this field
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    
-    // Real-time validation
-    if (field === 'email' && value) {
-      if (!validateEmail(value)) {
-        setErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
-      }
-    }
-    
-    if (field === 'phoneNumber' && value) {
-      const cleaned = value.replace(/\D/g, '');
-      if (cleaned.length > 0 && cleaned.length < 10) {
-        setErrors(prev => ({ ...prev, phoneNumber: 'Please enter a complete 10-digit phone number' }));
-      } else if (cleaned.length === 10 && !validatePhoneNumber(value)) {
-        setErrors(prev => ({ ...prev, phoneNumber: 'Please enter a valid phone number' }));
-      }
-    }
-    
-    if (field === 'username' && value) {
-      if (!validateUsername(value)) {
-        setErrors(prev => ({ ...prev, username: 'Username must be 3-20 characters and contain only letters, numbers, dots, and underscores' }));
-      } else if (containsBadWords(value)) {
-        setErrors(prev => ({ ...prev, username: 'Username contains inappropriate content' }));
-      }
-    }
-    
-    // Password validation
-    if (field === 'password' && value) {
-      const strength = validatePasswordStrength(value);
-      if (!strength.isValid) {
-        setErrors(prev => ({ ...prev, password: getPasswordStrengthMessage(value) }));
-        setValidationStatus(prev => ({ ...prev, password: 'invalid' }));
-      } else {
-        setErrors(prev => ({ ...prev, password: '' }));
-        setValidationStatus(prev => ({ ...prev, password: 'valid' }));
-      }
+
+    // Real-time validation for specific fields
+    if (['email', 'phoneNumber', 'username', 'password', 'confirmPassword', 'birthday'].includes(field)) {
+      setValidationStatus(prev => ({ ...prev, [field]: 'checking' }));
+      setValidationMessages(prev => ({ ...prev, [field]: '' }));
       
-      // Also re-validate confirm password if it exists
-      if (formData.confirmPassword) {
-        if (formData.confirmPassword === value) {
-          setErrors(prev => ({ ...prev, confirmPassword: '' }));
-          setValidationStatus(prev => ({ ...prev, confirmPassword: 'valid' }));
-        } else {
-          setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
-          setValidationStatus(prev => ({ ...prev, confirmPassword: 'invalid' }));
+      setTimeout(async () => {
+        let isValid = false;
+        let isUnique = true;
+        let message = '';
+
+        if (field === 'email') {
+          if (!value) {
+            message = 'Email is required';
+          } else if (!validateEmail(value)) {
+            message = 'Please enter a valid email address';
+          } else {
+            isUnique = !(await checkForDuplicates('email', value));
+            if (!isUnique) {
+              message = 'This email is already registered';
+            } else {
+              message = 'Email looks good!';
+              isValid = true;
+            }
+          }
+        } else if (field === 'phoneNumber') {
+          if (!value) {
+            message = 'Phone number is required';
+          } else if (!validatePhoneNumber(value) || !validatePhoneNumberDigits(value)) {
+            message = 'Please enter a valid 10-digit phone number';
+          } else {
+            isUnique = !(await checkForDuplicates('phoneNumber', value));
+            if (!isUnique) {
+              message = 'This phone number is already registered';
+            } else {
+              message = 'Phone number looks good!';
+              isValid = true;
+            }
+          }
+        } else if (field === 'username') {
+          if (!value) {
+            message = 'Username is required';
+          } else if (value.length < 3) {
+            message = 'Username must be at least 3 characters';
+          } else if (!validateUsername(value)) {
+            message = 'Username can only contain letters, numbers, . and _';
+          } else if (containsBadWords(value)) {
+            message = 'Username contains inappropriate content';
+          } else {
+            isUnique = !(await checkForDuplicates('username', value));
+            if (!isUnique) {
+              message = 'This username is already taken';
+            } else {
+              message = '';
+              isValid = true;
+            }
+          }
+        } else if (field === 'password') {
+          if (!value) {
+            message = 'Password is required';
+          } else if (value.length < 8) {
+            message = 'Password must be at least 8 characters';
+          } else if (!/[A-Z]/.test(value)) {
+            message = 'Password must contain at least 1 uppercase letter';
+          } else if (!/[0-9]/.test(value)) {
+            message = 'Password must contain at least 1 number';
+          } else if (!/[^A-Za-z0-9]/.test(value)) {
+            message = 'Password must contain at least 1 special character';
+          } else {
+            message = 'Password looks good!';
+            isValid = true;
+          }
+        } else if (field === 'confirmPassword') {
+          if (!value) {
+            message = 'Please confirm your password';
+          } else if (value !== formData.password) {
+            message = 'Passwords do not match';
+          } else {
+            message = 'Passwords match!';
+            isValid = true;
+          }
+        } else if (field === 'birthday') {
+          if (!value) {
+            message = 'Birthday is required';
+          } else if (value.length < 8) {
+            message = 'Please enter complete date (MM/DD/YYYY)';
+          } else if (!validateBirthdayFormat(value)) {
+            message = 'Please enter a valid date';
+          } else {
+            message = 'Birthday looks good!';
+            isValid = true;
+          }
         }
-      }
-    }
-    
-    // Confirm password validation
-    if (field === 'confirmPassword' && value) {
-      if (value !== formData.password) {
-        setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
-        setValidationStatus(prev => ({ ...prev, confirmPassword: 'invalid' }));
-      } else if (formData.password && value === formData.password) {
-        setErrors(prev => ({ ...prev, confirmPassword: '' }));
-        setValidationStatus(prev => ({ ...prev, confirmPassword: 'valid' }));
-      }
-    }
-    
-    // Birthday validation
-    if (field === 'birthday' && value) {
-      if (/^\d{2}-\d{2}-\d{4}$/.test(value)) {
-        setErrors(prev => ({ ...prev, birthday: '' }));
-        setValidationStatus(prev => ({ ...prev, birthday: 'valid' }));
-      } else {
-        setErrors(prev => ({ ...prev, birthday: 'Please enter birthday in MM-DD-YYYY format' }));
-        setValidationStatus(prev => ({ ...prev, birthday: 'invalid' }));
-      }
-    }
-    
-    // Gender validation
-    if (field === 'gender' && value) {
-      setErrors(prev => ({ ...prev, gender: '' }));
-      setValidationStatus(prev => ({ ...prev, gender: 'valid' }));
-    }
-    
-    // Sexuality validation
-    if (field === 'sexuality' && value) {
-      setErrors(prev => ({ ...prev, sexuality: '' }));
-      setValidationStatus(prev => ({ ...prev, sexuality: 'valid' }));
-    }
-    
-    // Check for duplicates on email, phone, and username
-    if (['email', 'phoneNumber', 'username'].includes(field)) {
-      // Debounce the validation check
-      setTimeout(() => {
-        checkForDuplicates(field, processedValue);
+
+        setValidationStatus(prev => ({
+          ...prev,
+          [field]: isValid ? 'valid' : 'invalid'
+        }));
+        
+        setValidationMessages(prev => ({
+          ...prev,
+          [field]: message
+        }));
       }, 500);
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Check required fields are filled
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.username.trim()) newErrors.username = 'Username is required';
-    if (!formData.password.trim()) newErrors.password = 'Password is required';
-    if (!formData.confirmPassword.trim()) newErrors.confirmPassword = 'Please confirm your password';
-    if (!formData.birthday.trim()) newErrors.birthday = 'Birthday is required';
-    if (!formData.gender.trim()) newErrors.gender = 'Gender is required';
-    if (!formData.sexuality.trim()) newErrors.sexuality = 'Sexuality is required';
-
-    // If any required fields are missing, return false
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return false;
-    }
-
-    // Check validation status for fields that have real-time validation
-    if (validationStatus.email === 'invalid') {
-      newErrors.email = errors.email || 'Email is invalid or already taken';
-    }
-    if (validationStatus.phoneNumber === 'invalid') {
-      newErrors.phoneNumber = errors.phoneNumber || 'Phone number is invalid or already taken';
-    }
-    if (validationStatus.username === 'invalid') {
-      newErrors.username = errors.username || 'Username is invalid or already taken';
-    }
-    if (validationStatus.password === 'invalid') {
-      newErrors.password = errors.password || 'Password does not meet requirements';
-    }
-    if (validationStatus.confirmPassword === 'invalid') {
-      newErrors.confirmPassword = errors.confirmPassword || 'Passwords do not match';
-    }
-    if (validationStatus.birthday === 'invalid') {
-      newErrors.birthday = errors.birthday || 'Please enter birthday in MM-DD-YYYY format';
-    }
-    if (validationStatus.gender === 'invalid') {
-      newErrors.gender = errors.gender || 'Gender is required';
-    }
-    if (validationStatus.sexuality === 'invalid') {
-      newErrors.sexuality = errors.sexuality || 'Sexuality is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Debug function to check validation status
-  const debugValidation = () => {
-    console.log('Form Data:', formData);
-    console.log('Validation Status:', validationStatus);
-    console.log('Errors:', errors);
-    
-    // Test validateForm function
-    const formValid = validateForm();
-    console.log('Form Valid:', formValid);
-    
-    // Test each validation step
-    const requiredFields = ['email', 'phoneNumber', 'firstName', 'lastName', 'username', 'password', 'confirmPassword', 'birthday', 'gender', 'sexuality'];
-    const missingFields = requiredFields.filter(field => !formData[field]?.trim());
-    console.log('Missing required fields:', missingFields);
-    
-    const invalidFields = Object.entries(validationStatus).filter(([field, status]) => status === 'invalid');
-    console.log('Invalid validation status fields:', invalidFields);
-    
-    // Check each field individually
-    const fieldChecks = {
-      email: {
-        filled: !!formData.email.trim(),
-        status: validationStatus.email,
-        error: errors.email
-      },
-      phoneNumber: {
-        filled: !!formData.phoneNumber.trim(),
-        status: validationStatus.phoneNumber,
-        error: errors.phoneNumber
-      },
-      username: {
-        filled: !!formData.username.trim(),
-        status: validationStatus.username,
-        error: errors.username
-      },
-      password: {
-        filled: !!formData.password.trim(),
-        status: validationStatus.password,
-        error: errors.password
-      },
-      confirmPassword: {
-        filled: !!formData.confirmPassword.trim(),
-        status: validationStatus.confirmPassword,
-        error: errors.confirmPassword
-      },
-      birthday: {
-        filled: !!formData.birthday.trim(),
-        status: validationStatus.birthday,
-        format: /^\d{2}-\d{2}-\d{4}$/.test(formData.birthday),
-        error: errors.birthday
-      },
-      gender: {
-        filled: !!formData.gender.trim(),
-        status: validationStatus.gender,
-        error: errors.gender
-      },
-      sexuality: {
-        filled: !!formData.sexuality.trim(),
-        status: validationStatus.sexuality,
-        error: errors.sexuality
-      }
-    };
-    
-    console.log('Field Checks:', fieldChecks);
-    
-    Alert.alert(
-      'Debug Info', 
-      `Form Valid: ${formValid}\nMissing Fields: ${missingFields.length > 0 ? missingFields.join(', ') : 'None'}\nInvalid Fields: ${invalidFields.length > 0 ? invalidFields.map(([field]) => field).join(', ') : 'None'}\n\nField Status:\n${Object.entries(fieldChecks).map(([field, check]) => 
-        `${field}: filled=${check.filled}, status=${check.status || 'N/A'}, error=${check.error || 'none'}`
-      ).join('\n')}`
-    );
-  };
-
   const handleCreateAccount = async () => {
-    // Debug validation status
-    console.log('Attempting to create account...');
-    console.log('Form Data:', formData);
-    console.log('Validation Status:', validationStatus);
-    console.log('Errors:', errors);
-
-    // Check if any validation is still in progress
-    if (Object.values(validationStatus).some(status => status === 'checking')) {
-      Alert.alert('Please Wait', 'Please wait for validation to complete');
-      return;
-    }
-
-    // Validate the form
-    if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fix all errors before continuing');
-      return;
-    }
-
     setLoading(true);
+    
     try {
+      // Check if all validation statuses are valid
+      const requiredFields = ['email', 'phoneNumber', 'username', 'password', 'confirmPassword', 'birthday'];
+      const invalidFields = requiredFields.filter(field => validationStatus[field] !== 'valid');
+      
+      if (invalidFields.length > 0) {
+        Alert.alert(
+          'Validation Error', 
+          'Please fix all validation errors before creating your account. Check the messages below each field for specific requirements.'
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Check if all required fields are filled
+      const newErrors = {};
+      
+      if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+      if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+      if (!formData.email.trim()) newErrors.email = 'Email is required';
+      if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
+      if (!formData.username.trim()) newErrors.username = 'Username is required';
+      if (!formData.password.trim()) newErrors.password = 'Password is required';
+      if (!formData.confirmPassword.trim()) newErrors.confirmPassword = 'Confirm password is required';
+      if (!formData.birthday.trim()) newErrors.birthday = 'Birthday is required';
+      if (!formData.gender.trim()) newErrors.gender = 'Gender is required';
+      if (!formData.sexuality.trim()) newErrors.sexuality = 'Sexuality is required';
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        setLoading(false);
+        return;
+      }
+
+      // Check for duplicates
+      const emailExists = await checkForDuplicates('email', formData.email);
+      const phoneExists = await checkForDuplicates('phoneNumber', formData.phoneNumber);
+      const usernameExists = await checkForDuplicates('username', formData.username);
+
+      if (emailExists || phoneExists || usernameExists) {
+        const duplicateErrors = {};
+        if (emailExists) duplicateErrors.email = 'Email already exists';
+        if (phoneExists) duplicateErrors.phoneNumber = 'Phone number already exists';
+        if (usernameExists) duplicateErrors.username = 'Username already exists';
+        setErrors(duplicateErrors);
+        setLoading(false);
+        return;
+      }
+
       // Create account
       const accountData = {
-        ...formData,
-        phoneNumber: getFullPhoneNumber(), // Use full phone number with country code
         id: Date.now().toString(),
+        email: formData.email,
+        phoneNumber: `${selectedCountry.code}${formData.phoneNumber}`,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+        password: formData.password, // In real app, hash this
+        birthday: formData.birthday,
+        gender: formData.gender,
+        sexuality: formData.sexuality,
         createdAt: new Date().toISOString(),
       };
 
-      // Store in AsyncStorage
       await createAccount(accountData);
       
       Alert.alert(
         'Account Created!',
-        'Your account has been successfully created. You can now sign in.',
-        [
-          {
-            text: 'Sign In',
-            onPress: () => navigation.navigate('Login')
-          }
-        ]
+        'Your account has been created successfully. Please complete your profile.',
+        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
       );
+      
     } catch (error) {
       Alert.alert('Error', 'Failed to create account. Please try again.');
     } finally {
@@ -602,8 +368,92 @@ const AccountCreationScreen = ({ navigation }) => {
     }
   };
 
-  const genderOptions = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say'];
-  const sexualityOptions = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Other', 'Prefer not to say'];
+  const formatPhoneNumber = (text) => {
+    const cleaned = text.replace(/\D/g, '');
+    // Limit to 10 digits
+    const limited = cleaned.slice(0, 10);
+    const match = limited.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    if (match) {
+      const [, area, prefix, line] = match;
+      if (line) return `(${area}) ${prefix}-${line}`;
+      if (prefix) return `(${area}) ${prefix}`;
+      if (area) return `(${area}`;
+    }
+    return limited;
+  };
+
+  const formatBirthday = (text) => {
+    const cleaned = text.replace(/\D/g, '');
+    // Limit to 8 digits (MMDDYYYY)
+    const limited = cleaned.slice(0, 8);
+    const match = limited.match(/^(\d{0,2})(\d{0,2})(\d{0,4})$/);
+    if (match) {
+      const [, month, day, year] = match;
+      
+      // Validate month (01-12, no 00)
+      let validMonth = month;
+      if (month.length === 2) {
+        const monthNum = parseInt(month);
+        if (monthNum === 0) {
+          validMonth = month.slice(0, 1); // Remove the 0
+        } else if (monthNum > 12) {
+          validMonth = '12'; // Cap at 12
+        }
+      }
+      
+      // Validate day (01-31, no 00)
+      let validDay = day;
+      if (day.length === 2) {
+        const dayNum = parseInt(day);
+        if (dayNum === 0) {
+          validDay = day.slice(0, 1); // Remove the 0
+        } else if (dayNum > 31) {
+          validDay = '31'; // Cap at 31
+        }
+      }
+      
+      if (year) return `${validMonth}/${validDay}/${year}`;
+      if (day) return `${validMonth}/${validDay}`;
+      if (month) return `${validMonth}`;
+    }
+    return limited;
+  };
+
+  const getValidationIcon = (field) => {
+    const status = validationStatus[field];
+    if (status === 'checking') return 'time';
+    if (status === 'valid') return 'checkmark-circle';
+    if (status === 'invalid') return 'close-circle';
+    return null;
+  };
+
+  const getValidationColor = (field) => {
+    const status = validationStatus[field];
+    if (status === 'valid') return '#4CAF50';
+    if (status === 'invalid') return '#F44336';
+    return '#E6C547';
+  };
+
+  const handleDateSelect = (date) => {
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const formattedDate = `${month}/${day}/${year}`;
+    
+    setFormData(prev => ({ ...prev, birthday: formattedDate }));
+    setSelectedDate(date);
+    setShowDatePicker(false);
+  };
+
+  const handleGenderSelect = (gender) => {
+    setFormData(prev => ({ ...prev, gender }));
+    setShowGenderPicker(false);
+  };
+
+  const handleSexualitySelect = (sexuality) => {
+    setFormData(prev => ({ ...prev, sexuality }));
+    setShowSexualityPicker(false);
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -613,351 +463,457 @@ const AccountCreationScreen = ({ navigation }) => {
         resizeMode="cover"
       >
         <LinearGradient
-          colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.4)']}
-          style={styles.gradient}
+          colors={['#1A0D0F', '#281218', '#381B22']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.backgroundGradient}
         >
           <SafeAreaView style={styles.safeArea}>
-            <View style={styles.content}>
+            <View 
+              style={styles.content}
+              onTouchStart={() => {
+                setEmailFocused(false);
+                setPhoneFocused(false);
+                setUsernameFocused(false);
+                setPasswordFocused(false);
+                setConfirmPasswordFocused(false);
+                setFirstNameFocused(false);
+                setLastNameFocused(false);
+                setBirthdayFocused(false);
+              }}
+            >
               {/* Header */}
               <View style={styles.header}>
-                <Button
-                  title="← Back"
-                  onPress={() => navigation.goBack()}
-                  variant="ghost"
+                {/* Back Button */}
+                <TouchableOpacity
                   style={styles.backButton}
-                />
-                <Text style={[styles.title, { color: colors.text }]}>
-                  Create Account
-                </Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                  Join the community
+                  onPress={() => navigation.navigate('Login')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="arrow-back" size={24} color="#E6C547" />
+                  <Text style={styles.backButtonText}>Back</Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.appTitle}>Over Drinks</Text>
+                <View style={styles.wineGlassesContainer}>
+                  <Ionicons name="wine" size={24} color="#8B0000" />
+                  <View style={styles.dashedLine} />
+                  <Ionicons name="wine" size={24} color="#8B0000" />
+                </View>
+                <Text style={styles.tagline}>
+                  Create your account
                 </Text>
               </View>
 
-              {/* Form */}
-              <View style={styles.form}>
-                {/* Personal Information */}
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Personal Information
+              {/* Account Creation Container */}
+              <View style={styles.accountContainer}>
+                <LinearGradient
+                  colors={['#000000', '#1a1a1a']}
+                  style={styles.containerGradient}
+                >
+                  <Text style={styles.containerTitle}>
+                    Join the community
                   </Text>
-                  
-                  <View style={styles.row}>
-                    <View style={[styles.halfInput, { marginRight: 8 }]}>
-                      <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
-                      <Input
-                        value={formData.firstName}
-                        onChangeText={(value) => updateFormData('firstName', value)}
-                        placeholder="First name"
-                        style={styles.input}
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
-                    </View>
-                    <View style={[styles.halfInput, { marginLeft: 8 }]}>
-                      <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
-                      <Input
-                        value={formData.lastName}
-                        onChangeText={(value) => updateFormData('lastName', value)}
-                        placeholder="Last name"
-                        style={styles.input}
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
-                    </View>
-                  </View>
 
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Email</Text>
-                    <View style={styles.inputWrapper}>
-                      <Input
-                        value={formData.email}
-                        onChangeText={(value) => updateFormData('email', value)}
-                        placeholder="Email address"
-                        keyboardType="email-address"
-                        style={styles.input}
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      {validationStatus.email === 'checking' && (
-                        <Ionicons name="time" size={16} color={colors.textSecondary} style={styles.validationIcon} />
-                      )}
-                      {validationStatus.email === 'valid' && (
-                        <Ionicons name="checkmark-circle" size={16} color="#10b981" style={styles.validationIcon} />
-                      )}
-                      {validationStatus.email === 'invalid' && (
-                        <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.validationIcon} />
-                      )}
-                    </View>
-                    {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-                  </View>
-
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Phone Number</Text>
-                    <View style={styles.phoneInputContainer}>
-                      <TouchableOpacity
-                        style={styles.countryCodeButton}
-                        onPress={() => setShowCountryPicker(true)}
-                      >
-                        <Text style={[styles.countryCodeText, { color: colors.text }]}>
-                          {selectedCountry.flag} {selectedCountry.code}
-                        </Text>
-                        <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
-                      </TouchableOpacity>
-                      <View style={styles.phoneInputWrapper}>
-                        <Input
-                          value={formData.phoneNumber}
-                          onChangeText={(value) => updateFormData('phoneNumber', value)}
-                          placeholder="(123) 456-7890"
-                          keyboardType="phone-pad"
-                          style={styles.phoneInput}
-                          multiline={false}
-                          numberOfLines={1}
-                        />
-                        {validationStatus.phoneNumber === 'checking' && (
-                          <Ionicons name="time" size={16} color={colors.textSecondary} style={styles.validationIcon} />
-                        )}
-                        {validationStatus.phoneNumber === 'valid' && (
-                          <Ionicons name="checkmark-circle" size={16} color="#10b981" style={styles.validationIcon} />
-                        )}
-                        {validationStatus.phoneNumber === 'invalid' && (
-                          <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.validationIcon} />
-                        )}
-                      </View>
-                    </View>
-                    {errors.phoneNumber && <Text style={styles.errorText}>{errors.phoneNumber}</Text>}
-                  </View>
-
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Birthday</Text>
-                    <View style={styles.inputWrapper}>
-                      <Input
-                        value={formData.birthday}
-                        onChangeText={(value) => updateFormData('birthday', value)}
-                        placeholder="MM-DD-YYYY"
-                        style={styles.input}
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      <TouchableOpacity
-                        style={styles.calendarButton}
-                        onPress={() => setShowDatePicker(true)}
-                      >
-                        <Ionicons name="calendar" size={20} color={colors.textSecondary} />
-                      </TouchableOpacity>
-                    </View>
-                    {errors.birthday && <Text style={styles.errorText}>{errors.birthday}</Text>}
-                  </View>
-                </View>
-
-                {/* Account Information */}
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Account Information
-                  </Text>
-                  
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Username</Text>
-                    <View style={styles.inputWrapper}>
-                      <Input
-                        value={formData.username}
-                        onChangeText={(value) => updateFormData('username', value)}
-                        placeholder="Choose a username"
-                        style={styles.input}
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      {validationStatus.username === 'checking' && (
-                        <Ionicons name="time" size={16} color={colors.textSecondary} style={styles.validationIcon} />
-                      )}
-                      {validationStatus.username === 'valid' && (
-                        <Ionicons name="checkmark-circle" size={16} color="#10b981" style={styles.validationIcon} />
-                      )}
-                      {validationStatus.username === 'invalid' && (
-                        <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.validationIcon} />
-                      )}
-                    </View>
-                    {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
-                  </View>
-
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-                    <View style={styles.inputWrapper}>
-                      <Input
-                        value={formData.password}
-                        onChangeText={(value) => updateFormData('password', value)}
-                        placeholder="Create a password"
-                        secureTextEntry
-                        style={styles.input}
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      {validationStatus.password === 'valid' && (
-                        <Ionicons name="checkmark-circle" size={16} color="#10b981" style={styles.validationIcon} />
-                      )}
-                      {validationStatus.password === 'invalid' && (
-                        <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.validationIcon} />
-                      )}
-                    </View>
-                    {formData.password && (
-                      <View style={styles.passwordStrengthContainer}>
-                        <Text style={[styles.passwordStrengthText, { 
-                          color: validationStatus.password === 'valid' ? '#10b981' : '#ef4444' 
-                        }]}>
-                          {getPasswordStrengthMessage(formData.password)}
-                        </Text>
-                        <View style={styles.passwordRequirements}>
-                          <Text style={[styles.requirementText, { 
-                            color: validatePasswordStrength(formData.password).hasMinLength ? '#10b981' : '#ef4444' 
-                          }]}>
-                            • 8+ characters
-                          </Text>
-                          <Text style={[styles.requirementText, { 
-                            color: validatePasswordStrength(formData.password).hasUppercase ? '#10b981' : '#ef4444' 
-                          }]}>
-                            • 1 uppercase
-                          </Text>
-                          <Text style={[styles.requirementText, { 
-                            color: validatePasswordStrength(formData.password).hasNumber ? '#10b981' : '#ef4444' 
-                          }]}>
-                            • 1 number
-                          </Text>
-                          <Text style={[styles.requirementText, { 
-                            color: validatePasswordStrength(formData.password).hasSpecialChar ? '#10b981' : '#ef4444' 
-                          }]}>
-                            • 1 special symbol
-                          </Text>
+                  {/* Form */}
+                  <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+                    {/* Personal Information */}
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Personal Information</Text>
+                      
+                      <View style={styles.row}>
+                         <View style={[styles.halfInput, { marginRight: 8 }]}>
+                           <Text style={styles.label}>First Name</Text>
+                           <View style={[
+                             styles.inputWrapper,
+                             firstNameFocused && styles.inputWrapperFocused
+                           ]}>
+                             <TextInput
+                               value={formData.firstName}
+                               onChangeText={(value) => updateFormData('firstName', value)}
+                               placeholder="First name"
+                               placeholderTextColor="#E6C547"
+                               style={styles.inputField}
+                               onFocus={() => setFirstNameFocused(true)}
+                               onBlur={() => setFirstNameFocused(false)}
+                             />
+                           </View>
+                           {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
+                         </View>
+                        
+                        <View style={[styles.halfInput, { marginLeft: 8 }]}>
+                          <Text style={styles.label}>Last Name</Text>
+                          <View style={[
+                            styles.inputWrapper,
+                            lastNameFocused && styles.inputWrapperFocused
+                          ]}>
+                            <TextInput
+                              value={formData.lastName}
+                              onChangeText={(value) => updateFormData('lastName', value)}
+                              placeholder="Last name"
+                              placeholderTextColor="#E6C547"
+                              style={styles.inputField}
+                              onFocus={() => setLastNameFocused(true)}
+                              onBlur={() => setLastNameFocused(false)}
+                            />
+                          </View>
+                          {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
                         </View>
                       </View>
-                    )}
-                    {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-                  </View>
 
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
-                    <View style={styles.inputWrapper}>
-                      <Input
-                        value={formData.confirmPassword}
-                        onChangeText={(value) => updateFormData('confirmPassword', value)}
-                        placeholder="Confirm your password"
-                        secureTextEntry
-                        style={styles.input}
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      {validationStatus.confirmPassword === 'valid' && (
-                        <Ionicons name="checkmark-circle" size={16} color="#10b981" style={styles.validationIcon} />
-                      )}
-                      {validationStatus.confirmPassword === 'invalid' && (
-                        <Ionicons name="close-circle" size={16} color="#ef4444" style={styles.validationIcon} />
-                      )}
+                      {/* Email */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Email</Text>
+                        <View style={[
+                          styles.inputWrapper,
+                          emailFocused && styles.inputWrapperFocused
+                        ]}>
+                          <TextInput
+                            value={formData.email}
+                            onChangeText={(value) => updateFormData('email', value)}
+                            placeholder="Enter your email"
+                            placeholderTextColor="#E6C547"
+                            style={styles.inputField}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            onFocus={() => setEmailFocused(true)}
+                            onBlur={() => setEmailFocused(false)}
+                          />
+                          {getValidationIcon('email') && (
+                            <Ionicons
+                              name={getValidationIcon('email')}
+                              size={20}
+                              color={getValidationColor('email')}
+                              style={styles.validationIcon}
+                            />
+                          )}
+                         </View>
+                         {validationMessages.email && (
+                           <Text style={[
+                             styles.validationMessage,
+                             validationStatus.email === 'valid' && styles.validationMessageValid,
+                             validationStatus.email === 'invalid' && styles.validationMessageInvalid
+                           ]}>
+                             {validationMessages.email}
+                           </Text>
+                         )}
+                         {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                       </View>
+
+                      {/* Phone Number */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Phone Number</Text>
+                        <View style={styles.phoneContainer}>
+                          <TouchableOpacity
+                            style={styles.countrySelector}
+                            onPress={() => setShowCountryPicker(true)}
+                          >
+                            <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
+                            <Text style={styles.countryCode}>{selectedCountry.code}</Text>
+                            <Ionicons name="chevron-down" size={16} color="#E6C547" />
+                          </TouchableOpacity>
+                          <View style={[
+                            styles.phoneInputWrapper,
+                            phoneFocused && styles.inputWrapperFocused
+                          ]}>
+                            <TextInput
+                              value={formData.phoneNumber}
+                              onChangeText={(value) => updateFormData('phoneNumber', formatPhoneNumber(value))}
+                              placeholder="(555) 123-4567"
+                              placeholderTextColor="#E6C547"
+                              style={styles.inputField}
+                              keyboardType="phone-pad"
+                              onFocus={() => setPhoneFocused(true)}
+                              onBlur={() => setPhoneFocused(false)}
+                            />
+                            {getValidationIcon('phoneNumber') && (
+                              <Ionicons
+                                name={getValidationIcon('phoneNumber')}
+                                size={20}
+                                color={getValidationColor('phoneNumber')}
+                                style={styles.validationIcon}
+                              />
+                            )}
+                          </View>
+                         </View>
+                         {validationMessages.phoneNumber && (
+                           <Text style={[
+                             styles.validationMessage,
+                             validationStatus.phoneNumber === 'valid' && styles.validationMessageValid,
+                             validationStatus.phoneNumber === 'invalid' && styles.validationMessageInvalid
+                           ]}>
+                             {validationMessages.phoneNumber}
+                           </Text>
+                         )}
+                         {errors.phoneNumber && <Text style={styles.errorText}>{errors.phoneNumber}</Text>}
+                       </View>
+
+
+                       {/* Birthday */}
+                       <View style={styles.inputGroup}>
+                         <Text style={styles.label}>Birthday</Text>
+                         <View style={[
+                           styles.inputWrapper,
+                           birthdayFocused && styles.inputWrapperFocused
+                         ]}>
+                           <TextInput
+                             value={formData.birthday}
+                             onChangeText={(value) => updateFormData('birthday', formatBirthday(value))}
+                             placeholder="MM/DD/YYYY"
+                             placeholderTextColor="#E6C547"
+                             style={styles.inputField}
+                             keyboardType="numeric"
+                             onFocus={() => setBirthdayFocused(true)}
+                             onBlur={() => setBirthdayFocused(false)}
+                           />
+                           <TouchableOpacity
+                             style={styles.calendarButton}
+                             onPress={() => {
+                               setBirthdayFocused(true);
+                               setShowDatePicker(true);
+                             }}
+                           >
+                             <Ionicons name="calendar" size={20} color="#E6C547" />
+                           </TouchableOpacity>
+                         </View>
+                         {validationMessages.birthday && (
+                           <Text style={[
+                             styles.validationMessage,
+                             validationStatus.birthday === 'valid' && styles.validationMessageValid,
+                             validationStatus.birthday === 'invalid' && styles.validationMessageInvalid
+                           ]}>
+                             {validationMessages.birthday}
+                           </Text>
+                         )}
+                         {errors.birthday && <Text style={styles.errorText}>{errors.birthday}</Text>}
+                       </View>
+
+                       {/* Gender */}
+                       <View style={styles.inputGroup}>
+                         <Text style={styles.label}>Gender</Text>
+                         <TouchableOpacity
+                           style={styles.inputWrapper}
+                           onPress={() => {
+                             console.log('Gender field clicked, setting showGenderPicker to true');
+                             setShowGenderPicker(true);
+                           }}
+                           activeOpacity={0.7}
+                         >
+                           <Text style={[styles.inputField, { color: formData.gender ? '#F5F5DC' : '#E6C547' }]}>
+                             {formData.gender || 'Select Gender'}
+                           </Text>
+                           <Ionicons name="chevron-down" size={20} color="#E6C547" style={styles.validationIcon} />
+                         </TouchableOpacity>
+                         {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
+                       </View>
+
+                       {/* Sexuality */}
+                       <View style={styles.inputGroup}>
+                         <Text style={styles.label}>Sexuality</Text>
+                         <TouchableOpacity
+                           style={styles.inputWrapper}
+                           onPress={() => setShowSexualityPicker(true)}
+                           activeOpacity={0.7}
+                         >
+                           <Text style={[styles.inputField, { color: formData.sexuality ? '#F5F5DC' : '#E6C547' }]}>
+                             {formData.sexuality || 'Select Sexuality'}
+                           </Text>
+                           <Ionicons name="chevron-down" size={20} color="#E6C547" style={styles.validationIcon} />
+                         </TouchableOpacity>
+                         {errors.sexuality && <Text style={styles.errorText}>{errors.sexuality}</Text>}
+                       </View>
                     </View>
-                    {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-                  </View>
-                </View>
 
-                {/* Profile Information */}
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Profile Information
-                  </Text>
-                  
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Gender</Text>
-                    <View style={styles.optionsContainer}>
-                      {genderOptions.map((option) => (
-                        <Button
-                          key={option}
-                          title={option}
-                          onPress={() => updateFormData('gender', option)}
-                          variant={formData.gender === option ? 'primary' : 'secondary'}
-                          size="small"
-                          style={styles.optionButton}
-                        />
-                      ))}
+                     {/* Account Information Section */}
+                     <View style={styles.section}>
+                       <Text style={styles.sectionTitle}>Account Information</Text>
+                       
+                       {/* Username */}
+                       <View style={styles.inputGroup}>
+                         <Text style={styles.label}>Username</Text>
+                         <View style={[
+                           styles.inputWrapper,
+                           usernameFocused && styles.inputWrapperFocused
+                         ]}>
+                           <TextInput
+                             value={formData.username}
+                             onChangeText={(value) => updateFormData('username', value)}
+                             placeholder="Choose a username"
+                             placeholderTextColor="#E6C547"
+                             style={styles.inputField}
+                             autoCapitalize="none"
+                             autoComplete="off"
+                             textContentType="none"
+                             autoCorrect={false}
+                             onFocus={() => setUsernameFocused(true)}
+                             onBlur={() => setUsernameFocused(false)}
+                           />
+                           {getValidationIcon('username') && (
+                             <Ionicons
+                               name={getValidationIcon('username')}
+                               size={20}
+                               color={getValidationColor('username')}
+                               style={styles.validationIcon}
+                             />
+                           )}
+                         </View>
+                         {validationMessages.username && (
+                           <Text style={[
+                             styles.validationMessage,
+                             validationStatus.username === 'valid' && styles.validationMessageValid,
+                             validationStatus.username === 'invalid' && styles.validationMessageInvalid
+                           ]}>
+                             {validationMessages.username}
+                           </Text>
+                         )}
+                         {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
+                       </View>
+                       
+                       <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Password</Text>
+                        <View style={[
+                          styles.inputWrapper,
+                          passwordFocused && styles.inputWrapperFocused
+                        ]}>
+                          <TextInput
+                            value={formData.password}
+                            onChangeText={(value) => updateFormData('password', value)}
+                            placeholder="Create a password"
+                            placeholderTextColor="#E6C547"
+                            style={styles.inputField}
+                            secureTextEntry
+                            onFocus={() => setPasswordFocused(true)}
+                            onBlur={() => setPasswordFocused(false)}
+                          />
+                          {getValidationIcon('password') && (
+                            <Ionicons
+                              name={getValidationIcon('password')}
+                              size={20}
+                              color={getValidationColor('password')}
+                              style={styles.validationIcon}
+                            />
+                          )}
+                         </View>
+                         {validationMessages.password && (
+                           <Text style={[
+                             styles.validationMessage,
+                             validationStatus.password === 'valid' && styles.validationMessageValid,
+                             validationStatus.password === 'invalid' && styles.validationMessageInvalid
+                           ]}>
+                             {validationMessages.password}
+                           </Text>
+                         )}
+                         {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                       </View>
+
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Confirm Password</Text>
+                        <View style={[
+                          styles.inputWrapper,
+                          confirmPasswordFocused && styles.inputWrapperFocused
+                        ]}>
+                          <TextInput
+                            value={formData.confirmPassword}
+                            onChangeText={(value) => updateFormData('confirmPassword', value)}
+                            placeholder="Confirm your password"
+                            placeholderTextColor="#E6C547"
+                            style={styles.inputField}
+                            secureTextEntry
+                            onFocus={() => setConfirmPasswordFocused(true)}
+                            onBlur={() => setConfirmPasswordFocused(false)}
+                          />
+                          {getValidationIcon('confirmPassword') && (
+                            <Ionicons
+                              name={getValidationIcon('confirmPassword')}
+                              size={20}
+                              color={getValidationColor('confirmPassword')}
+                              style={styles.validationIcon}
+                            />
+                          )}
+                         </View>
+                         {validationMessages.confirmPassword && (
+                           <Text style={[
+                             styles.validationMessage,
+                             validationStatus.confirmPassword === 'valid' && styles.validationMessageValid,
+                             validationStatus.confirmPassword === 'invalid' && styles.validationMessageInvalid
+                           ]}>
+                             {validationMessages.confirmPassword}
+                           </Text>
+                         )}
+                         {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+                       </View>
                     </View>
-                    {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
-                  </View>
 
-                  <View style={styles.inputContainer}>
-                    <Text style={[styles.label, { color: colors.text }]}>Sexuality</Text>
-                    <View style={styles.optionsContainer}>
-                      {sexualityOptions.map((option) => (
-                        <Button
-                          key={option}
-                          title={option}
-                          onPress={() => updateFormData('sexuality', option)}
-                          variant={formData.sexuality === option ? 'primary' : 'secondary'}
-                          size="small"
-                          style={styles.optionButton}
-                        />
-                      ))}
-                    </View>
-                    {errors.sexuality && <Text style={styles.errorText}>{errors.sexuality}</Text>}
-                  </View>
-                </View>
-
-                <Button
-                  title="Debug Validation"
-                  onPress={debugValidation}
-                  variant="ghost"
-                  style={styles.debugButton}
-                />
-                <Button
-                  title="Test Phone Duplicate Check"
-                  onPress={async () => {
-                    try {
-                      const accountsData = await AsyncStorage.getItem('userAccounts');
-                      const accounts = accountsData ? JSON.parse(accountsData) : [];
-                      const cleaned = formData.phoneNumber.replace(/\D/g, '');
-                      const fullPhone = `${selectedCountry.code}${cleaned}`;
-                      const isDuplicate = accounts.some(account => 
-                        account.phoneNumber === fullPhone
-                      );
-                      Alert.alert(
-                        'Phone Check', 
-                        `Phone: ${fullPhone}\nExisting accounts: ${accounts.length}\nIs duplicate: ${isDuplicate}\nAccounts: ${JSON.stringify(accounts.map(a => ({ phone: a.phoneNumber, email: a.email })), null, 2)}`
-                      );
-                    } catch (error) {
-                      Alert.alert('Error', `Failed: ${error.message}`);
-                    }
-                  }}
-                  variant="ghost"
-                  style={styles.debugButton}
-                />
-                <Button
-                  title="Test Account Creation (Bypass)"
-                  onPress={async () => {
-                    try {
-                      const accountData = {
-                        ...formData,
-                        phoneNumber: getFullPhoneNumber(),
-                        id: Date.now().toString(),
-                        createdAt: new Date().toISOString(),
-                      };
-                      await createAccount(accountData);
-                      Alert.alert('Success!', 'Account created successfully (bypassed validation)');
-                    } catch (error) {
-                      Alert.alert('Error', `Failed: ${error.message}`);
-                    }
-                  }}
-                  variant="ghost"
-                  style={styles.debugButton}
-                />
-                <Button
-                  title="Create Account"
-                  onPress={handleCreateAccount}
-                  loading={loading}
-                  style={styles.createButton}
-                />
+                    {/* Create Account Button */}
+                    <TouchableOpacity
+                      style={[styles.createButton, loading && styles.createButtonDisabled]}
+                      onPress={handleCreateAccount}
+                      disabled={loading}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#E6C547', '#D4AF37', '#B8860B']}
+                        style={styles.createButtonGradient}
+                      >
+                        <Text style={styles.createButtonText}>
+                          {loading ? 'Creating Account...' : 'Create Account'}
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </LinearGradient>
               </View>
             </View>
           </SafeAreaView>
         </LinearGradient>
       </ImageBackground>
-      
+
+      {/* Gender Picker Modal */}
+      <Modal
+        visible={showGenderPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          console.log('Gender modal onRequestClose called');
+          setShowGenderPicker(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Gender</Text>
+            
+            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+              {genderOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.optionItem,
+                    formData.gender === option && styles.optionItemSelected
+                  ]}
+                  onPress={() => handleGenderSelect(option)}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    formData.gender === option && styles.optionTextSelected
+                  ]}>
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => setShowGenderPicker(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Date Picker Modal */}
       <Modal
         visible={showDatePicker}
@@ -966,68 +922,62 @@ const AccountCreationScreen = ({ navigation }) => {
         onRequestClose={() => setShowDatePicker(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Birthday</Text>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Birthday</Text>
             
             <View style={styles.datePickerRow}>
               {/* Month Picker */}
               <View style={styles.pickerContainer}>
-                <Text style={[styles.pickerLabel, { color: colors.text }]}>Month</Text>
+                <Text style={styles.pickerLabel}>Month</Text>
                 <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                  {months.map((month) => (
-                    <TouchableOpacity
-                      key={month}
-                      style={[
-                        styles.pickerOption,
-                        {
-                          backgroundColor: selectedDate.month === month ? colors.primary : colors.muted,
-                          borderColor: colors.border,
-                        }
-                      ]}
-                      onPress={() => setSelectedDate(prev => ({ ...prev, month }))}
-                    >
-                      <Text
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const month = new Date(2024, i, 1).toLocaleString('default', { month: 'long' });
+                    return (
+                      <TouchableOpacity
+                        key={month}
                         style={[
-                          styles.pickerOptionText,
-                          {
-                            color: selectedDate.month === month ? colors.primaryForeground : colors.text,
-                          }
+                          styles.pickerOption,
+                          selectedDate.getMonth() === i && styles.pickerOptionSelected
                         ]}
+                        onPress={() => {
+                          const newDate = new Date(selectedDate);
+                          newDate.setMonth(i);
+                          setSelectedDate(newDate);
+                        }}
                       >
-                        {month}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text style={[
+                          styles.pickerOptionText,
+                          selectedDate.getMonth() === i && styles.pickerOptionTextSelected
+                        ]}>
+                          {month}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
               </View>
               
               {/* Day Picker */}
               <View style={styles.pickerContainer}>
-                <Text style={[styles.pickerLabel, { color: colors.text }]}>Day</Text>
+                <Text style={styles.pickerLabel}>Day</Text>
                 <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                  {selectedDate.month && selectedDate.year && Array.from(
-                    { length: getDaysInMonth(months.indexOf(selectedDate.month) + 1, selectedDate.year) },
-                    (_, i) => i + 1
-                  ).map((day) => (
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                     <TouchableOpacity
                       key={day}
                       style={[
                         styles.pickerOption,
-                        {
-                          backgroundColor: selectedDate.day === day.toString() ? colors.primary : colors.muted,
-                          borderColor: colors.border,
-                        }
+                        selectedDate.getDate() === day && styles.pickerOptionSelected
                       ]}
-                      onPress={() => setSelectedDate(prev => ({ ...prev, day: day.toString() }))}
+                      onPress={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setDate(day);
+                        setSelectedDate(newDate);
+                      }}
                     >
-                      <Text
-                        style={[
-                          styles.pickerOptionText,
-                          {
-                            color: selectedDate.day === day.toString() ? colors.primaryForeground : colors.text,
-                          }
-                        ]}
-                      >
+                      <Text style={[
+                        styles.pickerOptionText,
+                        selectedDate.getDate() === day && styles.pickerOptionTextSelected
+                      ]}>
                         {day}
                       </Text>
                     </TouchableOpacity>
@@ -1037,113 +987,92 @@ const AccountCreationScreen = ({ navigation }) => {
               
               {/* Year Picker */}
               <View style={styles.pickerContainer}>
-                <Text style={[styles.pickerLabel, { color: colors.text }]}>Year</Text>
+                <Text style={styles.pickerLabel}>Year</Text>
                 <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-                  {generateYears().map((year) => (
-                    <TouchableOpacity
-                      key={year}
-                      style={[
-                        styles.pickerOption,
-                        {
-                          backgroundColor: selectedDate.year === year.toString() ? colors.primary : colors.muted,
-                          borderColor: colors.border,
-                        }
-                      ]}
-                      onPress={() => setSelectedDate(prev => ({ ...prev, year: year.toString() }))}
-                    >
-                      <Text
+                  {Array.from({ length: 100 }, (_, i) => {
+                    const year = new Date().getFullYear() - 18 - i; // Start from 18 years ago
+                    return (
+                      <TouchableOpacity
+                        key={year}
                         style={[
-                          styles.pickerOptionText,
-                          {
-                            color: selectedDate.year === year.toString() ? colors.primaryForeground : colors.text,
-                          }
+                          styles.pickerOption,
+                          selectedDate.getFullYear() === year && styles.pickerOptionSelected
                         ]}
+                        onPress={() => {
+                          const newDate = new Date(selectedDate);
+                          newDate.setFullYear(year);
+                          setSelectedDate(newDate);
+                        }}
                       >
-                        {year}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text style={[
+                          styles.pickerOptionText,
+                          selectedDate.getFullYear() === year && styles.pickerOptionTextSelected
+                        ]}>
+                          {year}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
               </View>
             </View>
             
             <View style={styles.modalButtons}>
-              <Button
-                title="Cancel"
+              <TouchableOpacity
+                style={styles.modalButton}
                 onPress={() => setShowDatePicker(false)}
-                variant="ghost"
-                style={styles.modalButton}
-              />
-              <Button
-                title="Select Date"
-                onPress={handleDateSelect}
-                style={styles.modalButton}
-                disabled={!selectedDate.month || !selectedDate.day || !selectedDate.year}
-              />
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={() => handleDateSelect(selectedDate)}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextPrimary]}>Select Date</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      
-      {/* Country Picker Modal */}
+
+      {/* Sexuality Picker Modal */}
       <Modal
-        visible={showCountryPicker}
+        visible={showSexualityPicker}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowCountryPicker(false)}
+        onRequestClose={() => setShowSexualityPicker(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Country</Text>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Sexuality</Text>
             
-            <ScrollView style={styles.countryList} showsVerticalScrollIndicator={false}>
-              {countries.map((country, index) => (
+            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+              {sexualityOptions.map((option) => (
                 <TouchableOpacity
-                  key={`${country.code}-${country.name}-${index}`}
+                  key={option}
                   style={[
-                    styles.countryOption,
-                    {
-                      backgroundColor: selectedCountry.code === country.code && selectedCountry.name === country.name ? colors.primary : colors.muted,
-                      borderColor: colors.border,
-                    }
+                    styles.optionItem,
+                    formData.sexuality === option && styles.optionItemSelected
                   ]}
-                  onPress={() => {
-                    setSelectedCountry(country);
-                    setShowCountryPicker(false);
-                  }}
+                  onPress={() => handleSexualitySelect(option)}
                 >
-                  <Text style={styles.countryFlag}>{country.flag}</Text>
-                  <Text
-                    style={[
-                      styles.countryName,
-                      {
-                        color: selectedCountry.code === country.code && selectedCountry.name === country.name ? colors.primaryForeground : colors.text,
-                      }
-                    ]}
-                  >
-                    {country.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.countryCode,
-                      {
-                        color: selectedCountry.code === country.code && selectedCountry.name === country.name ? colors.primaryForeground : colors.textSecondary,
-                      }
-                    ]}
-                  >
-                    {country.code}
+                  <Text style={[
+                    styles.optionText,
+                    formData.sexuality === option && styles.optionTextSelected
+                  ]}>
+                    {option}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
             
             <View style={styles.modalButtons}>
-              <Button
-                title="Cancel"
-                onPress={() => setShowCountryPicker(false)}
-                variant="ghost"
+              <TouchableOpacity
                 style={styles.modalButton}
-              />
+                onPress={() => setShowSexualityPicker(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -1158,9 +1087,10 @@ const styles = StyleSheet.create({
   },
   backgroundImage: {
     flex: 1,
-    minHeight: height,
+    width: '100%',
+    height: '100%',
   },
-  gradient: {
+  backgroundGradient: {
     flex: 1,
   },
   safeArea: {
@@ -1168,42 +1098,105 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 48,
+    width: '100%',
+    position: 'relative',
   },
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 24,
+    position: 'absolute',
+    left: 0,
+    top: -40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
-  title: {
-    fontSize: 32,
+  backButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  appTitle: {
+    fontSize: 36,
     fontWeight: 'bold',
     fontFamily: 'Georgia',
-    marginBottom: 8,
+    color: '#E6C547',
+    marginBottom: 16,
     textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
-  subtitle: {
+  wineGlassesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dashedLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#E6C547',
+    marginHorizontal: 8,
+  },
+  tagline: {
     fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
     textAlign: 'center',
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  accountContainer: {
+    width: '100%',
+    maxWidth: 500,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    overflow: 'hidden',
+    shadowColor: '#E6C547',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  containerGradient: {
+    padding: 32,
+  },
+  containerTitle: {
+    fontSize: 20,
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
+    textAlign: 'center',
+    marginBottom: 24,
+    fontWeight: '600',
   },
   form: {
     flex: 1,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
     fontFamily: 'Georgia',
+    color: '#F5F5DC',
     marginBottom: 16,
-  },
-  inputContainer: {
-    marginBottom: 16,
+    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',
@@ -1212,74 +1205,225 @@ const styles = StyleSheet.create({
   halfInput: {
     flex: 1,
   },
+  inputGroup: {
+    marginBottom: 16,
+  },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
     fontFamily: 'Georgia',
-  },
-  input: {
-    width: '100%',
+    color: '#F5F5DC',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   inputWrapper: {
+    height: 48,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
     position: 'relative',
-    width: '100%',
+    flexDirection: 'row',
+  },
+  inputWrapperFocused: {
+    borderColor: '#E6C547',
+    borderWidth: 2,
+    shadowColor: '#E6C547',
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  inputField: {
+    fontSize: 16,
+    color: '#F5F5DC',
+    fontFamily: 'Georgia',
+    flex: 1,
+    textAlign: 'left',
+    textAlignVertical: 'center',
   },
   validationIcon: {
     position: 'absolute',
     right: 12,
-    top: '50%',
-    marginTop: -8,
-    zIndex: 1,
+    top: 14,
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countrySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginRight: 8,
+    minWidth: 80,
+  },
+  countryFlag: {
+    fontSize: 16,
+    marginRight: 4,
+  },
+  countryCode: {
+    fontSize: 14,
+    color: '#E6C547',
+    fontFamily: 'Georgia',
+    marginRight: 4,
+  },
+  phoneInputWrapper: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    position: 'relative',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginTop: 4,
+  },
+  validationMessage: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  validationMessageValid: {
+    color: '#4CAF50',
+  },
+  validationMessageInvalid: {
+    color: '#FF6B6B',
+  },
+  createButton: {
+    marginTop: 24,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  createButtonDisabled: {
+    opacity: 0.6,
+  },
+  createButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#000000',
+    fontWeight: 'bold',
   },
   calendarButton: {
     position: 'absolute',
     right: 12,
-    top: '50%',
-    marginTop: -10,
-    zIndex: 1,
-  },
-  optionsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  optionButton: {
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  createButton: {
-    width: '100%',
-    marginTop: 16,
-  },
-  debugButton: {
-    width: '100%',
-    marginBottom: 8,
+    top: 14,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
   },
   modalContent: {
     width: '90%',
     maxHeight: '80%',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    padding: 24,
+    zIndex: 10000,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
     textAlign: 'center',
     marginBottom: 20,
+    fontWeight: 'bold',
+  },
+  datePickerContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  datePickerLabel: {
+    fontSize: 16,
     fontFamily: 'Georgia',
+    color: '#F5F5DC',
+    marginBottom: 16,
+  },
+  dateButton: {
+    backgroundColor: '#E6C547',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  dateButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  optionsList: {
+    maxHeight: 200,
+    marginBottom: 20,
+  },
+  optionItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(230, 197, 71, 0.2)',
+  },
+  optionItemSelected: {
+    backgroundColor: 'rgba(230, 197, 71, 0.1)',
+  },
+  optionText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
+  },
+  optionTextSelected: {
+    color: '#E6C547',
+    fontWeight: 'bold',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  modalButton: {
+    backgroundColor: 'rgba(230, 197, 71, 0.2)',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    fontWeight: '500',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#E6C547',
+    marginLeft: 12,
+  },
+  modalButtonTextPrimary: {
+    color: '#000000',
+    fontWeight: 'bold',
   },
   datePickerRow: {
     flexDirection: 'row',
@@ -1292,112 +1436,38 @@ const styles = StyleSheet.create({
   },
   pickerLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
     textAlign: 'center',
     marginBottom: 8,
+    fontWeight: '600',
   },
   pickerScroll: {
     maxHeight: 150,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#E6C547',
     borderRadius: 8,
+    backgroundColor: '#2a2a2a',
   },
   pickerOption: {
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: 'rgba(230, 197, 71, 0.2)',
     alignItems: 'center',
+  },
+  pickerOptionSelected: {
+    backgroundColor: 'rgba(230, 197, 71, 0.2)',
   },
   pickerOptionText: {
     fontSize: 14,
+    fontFamily: 'Georgia',
+    color: '#F5F5DC',
     fontWeight: '500',
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-  },
-  // Phone input styles
-  phoneInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  countryCodeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    minWidth: 80,
-  },
-  countryCodeText: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginRight: 4,
-  },
-  phoneInputWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-  phoneInput: {
-    width: '100%',
-  },
-  // Country picker styles
-  countryList: {
-    maxHeight: 300,
-    marginBottom: 20,
-  },
-  countryOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  countryFlag: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  countryName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  countryCode: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  // Password strength styles
-  passwordStrengthContainer: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  passwordStrengthText: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  passwordRequirements: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  requirementText: {
-    fontSize: 12,
-    fontWeight: '500',
+  pickerOptionTextSelected: {
+    color: '#E6C547',
+    fontWeight: 'bold',
   },
 });
 
