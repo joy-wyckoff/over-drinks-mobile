@@ -1,350 +1,273 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as Location from 'expo-location';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import Switch from '../components/ui/Switch';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { venueApi, checkInApi } from '../utils/api';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const CheckInScreen = () => {
   const { colors } = useTheme();
-  const { user } = useAuth();
   const navigation = useNavigation();
   const route = useRoute();
-  const queryClient = useQueryClient();
-
   const { venueId } = route.params;
-  const [mode, setMode] = useState('dating');
-  const [aiRecommendations, setAiRecommendations] = useState(true);
-  const [userLocation, setUserLocation] = useState(null);
-  const [locationError, setLocationError] = useState('');
 
-  const { data: venue, isLoading: venueLoading } = useQuery({
-    queryKey: ['venue', venueId],
-    queryFn: async () => {
-      const response = await venueApi.getVenue(venueId);
-      return response.json();
+  // Mock venue data
+  const venues = {
+    'test1': {
+      id: 'test1',
+      name: 'The Runnymede Lounge',
+      address: '13952 Runnymede St, Van Nuys, CA 91405',
+      type: 'bar',
+      musicType: 'Rock',
+      vibe: 'Casual',
     },
-    enabled: !!venueId,
-    onError: (error) => {
-      Alert.alert('Error', 'Failed to load venue details. Please try again.');
+    'test2': {
+      id: 'test2',
+      name: 'Van Nuys Social Club',
+      address: '13952 Runnymede St, Van Nuys, CA 91405',
+      type: 'lounge',
+      musicType: 'Electronic',
+      vibe: 'Trendy',
     },
-  });
-
-  const { data: currentCheckIn } = useQuery({
-    queryKey: ['currentCheckIn'],
-    queryFn: async () => {
-      const response = await checkInApi.getCurrentCheckIn();
-      if (response.ok) {
-        return response.json();
-      }
-      return null;
-    },
-    retry: false,
-  });
-
-  const checkInMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await checkInApi.checkIn(data);
-      return response.json();
-    },
-    onSuccess: () => {
-      Alert.alert('Success', `You're now checked in at ${venue?.name}. Time to see who else is here!`);
-      queryClient.invalidateQueries({ queryKey: ['currentCheckIn'] });
-      navigation.navigate('ProfileBrowsing', { venueId });
-    },
-    onError: (error) => {
-      Alert.alert('Error', 'Unable to check in at this venue. Please try again.');
-    },
-  });
-
-  const checkOutMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await checkInApi.checkOut(data);
-      return response.json();
-    },
-    onSuccess: () => {
-      Alert.alert('Success', "You've been checked out from your previous venue.");
-      queryClient.invalidateQueries({ queryKey: ['currentCheckIn'] });
-    },
-  });
-
-  // Auto check-out from previous venue if user is already checked in somewhere else
-  useEffect(() => {
-    if (currentCheckIn && currentCheckIn.venueId !== venueId) {
-      checkOutMutation.mutate({ venueId: currentCheckIn.venueId });
+    'test3': {
+      id: 'test3',
+      name: 'The Corner Pub',
+      address: '13952 Runnymede St, Van Nuys, CA 91405',
+      type: 'pub',
+      musicType: 'Country',
+      vibe: 'Classic',
     }
-  }, [currentCheckIn, venueId]);
+  };
 
-  // Get user's current location
+  // Mock profiles currently checked into the venue
+  const mockProfiles = [
+    {
+      id: 'profile1',
+      name: 'Alex',
+      age: 28,
+      bio: 'Love live music and craft cocktails. Looking for someone to explore LA with!',
+      interests: ['Music', 'Art', 'Travel', 'Food'],
+      photos: ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=600&fit=crop&crop=face'],
+      distance: '0.1 miles away',
+      lastActive: '2 minutes ago'
+    },
+    {
+      id: 'profile2',
+      name: 'Jordan',
+      age: 25,
+      bio: 'Always up for a good time! Dancing, laughing, and making memories.',
+      interests: ['Dancing', 'Fitness', 'Photography', 'Wine'],
+      photos: ['https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=600&fit=crop&crop=face'],
+      distance: '0.2 miles away',
+      lastActive: '5 minutes ago'
+    },
+    {
+      id: 'profile3',
+      name: 'Casey',
+      age: 30,
+      bio: 'Creative soul who loves deep conversations and spontaneous adventures.',
+      interests: ['Writing', 'Music', 'Hiking', 'Coffee'],
+      photos: ['https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=600&fit=crop&crop=face'],
+      distance: '0.3 miles away',
+      lastActive: '1 minute ago'
+    }
+  ];
+
+  const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
+  const [swipedProfiles, setSwipedProfiles] = useState([]);
+  const [currentProfile, setCurrentProfile] = useState(mockProfiles[0]);
+
+  const venue = venues[venueId];
+
   useEffect(() => {
-    const getLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setLocationError('Location permission denied. Check-in will work without location verification.');
-          return;
-        }
+    if (currentProfileIndex < mockProfiles.length) {
+      setCurrentProfile(mockProfiles[currentProfileIndex]);
+    }
+  }, [currentProfileIndex]);
 
-        const location = await Location.getCurrentPositionAsync({});
-        setUserLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-      } catch (error) {
-        console.error('Location error:', error);
-        setLocationError('Unable to get your location. Check-in will work without location verification.');
-      }
+  const handleSwipe = (direction) => {
+    const profile = mockProfiles[currentProfileIndex];
+    const swipeData = {
+      profileId: profile.id,
+      direction: direction, // 'left' or 'right'
+      timestamp: new Date().toISOString()
     };
 
-    getLocation();
-  }, []);
+    setSwipedProfiles(prev => [...prev, swipeData]);
+    
+    if (direction === 'right') {
+      Alert.alert('Match!', `You liked ${profile.name}! They'll be notified.`);
+    }
 
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 3959; // Earth's radius in miles
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+    // Move to next profile
+    if (currentProfileIndex < mockProfiles.length - 1) {
+      setCurrentProfileIndex(prev => prev + 1);
+    } else {
+      // No more profiles
+      Alert.alert(
+        'No More Profiles',
+        'You\'ve seen everyone at this venue! Check back later for new people.',
+        [
+          {
+            text: 'Back to Venues',
+            onPress: () => navigation.navigate('VenueDiscovery')
+          }
+        ]
+      );
+    }
   };
 
-  const isWithinRange = () => {
-    if (!userLocation || !venue?.latitude || !venue?.longitude) return true;
-    const distance = calculateDistance(
-      userLocation.latitude,
-      userLocation.longitude,
-      parseFloat(venue.latitude),
-      parseFloat(venue.longitude)
-    );
-    return distance <= 0.1; // Within 0.1 miles
-  };
-
-  const handleCheckIn = () => {
-    checkInMutation.mutate({
-      venueId,
-      mode,
-      aiRecommendations,
-    });
-  };
-
-  const handleGoBack = () => {
-    navigation.navigate('VenueDiscovery');
-  };
-
-  if (venueLoading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Loading venue...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const handlePass = () => handleSwipe('left');
+  const handleLike = () => handleSwipe('right');
 
   if (!venue) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.errorContainer}>
-          <Text style={[styles.errorIcon, { color: colors.destructive }]}>⚠️</Text>
-          <Text style={[styles.errorText, { color: colors.text }]}>Venue not found</Text>
-          <Button title="Back to Venues" onPress={handleGoBack} />
-        </View>
+        <LinearGradient
+          colors={['#1A0D0F', '#281218', '#381B22']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.backgroundGradient}
+        >
+          <View style={styles.errorContainer}>
+            <Text style={[styles.errorText, { color: colors.text }]}>Venue not found</Text>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.backButtonText}>Go Back</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  if (currentProfileIndex >= mockProfiles.length) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <LinearGradient
+          colors={['#1A0D0F', '#281218', '#381B22']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.backgroundGradient}
+        >
+          <View style={styles.noMoreContainer}>
+            <Ionicons name="checkmark-circle" size={80} color="#E6C547" />
+            <Text style={[styles.noMoreTitle, { color: colors.text }]}>All Caught Up!</Text>
+            <Text style={[styles.noMoreText, { color: colors.textSecondary }]}>
+              You've seen everyone at {venue.name}. Check back later for new people!
+            </Text>
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={() => navigation.navigate('VenueDiscovery')}
+            >
+              <LinearGradient
+                colors={['#E6C547', '#D4AF37', '#B8860B']}
+                style={styles.continueButtonGradient}
+              >
+                <Text style={styles.continueButtonText}>Back to Venues</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <View style={styles.headerContent}>
+      <LinearGradient
+        colors={['#1A0D0F', '#281218', '#381B22']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.backgroundGradient}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#E6C547" />
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
           <View style={styles.venueInfo}>
-            <Text style={[styles.venueName, { color: colors.secondary }]}>
-              {venue.name}
-            </Text>
-            <Text style={[styles.venueAddress, { color: colors.textSecondary }]}>
-              {venue.address}
+            <Text style={[styles.venueName, { color: colors.text }]}>{venue.name}</Text>
+            <Text style={[styles.venueDetails, { color: colors.textSecondary }]}>
+              {venue.musicType} • {venue.vibe}
             </Text>
           </View>
-          <Button
-            title="←"
-            onPress={handleGoBack}
-            variant="ghost"
-            size="small"
-            style={styles.backButton}
-          />
+          <View style={styles.profileCounter}>
+            <Text style={[styles.counterText, { color: colors.textSecondary }]}>
+              {currentProfileIndex + 1} of {mockProfiles.length}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          {/* Check In Section */}
-          <View style={styles.checkInSection}>
-            <View style={styles.checkInIcon}>
-              <Text style={styles.checkInIconText}>📍</Text>
-            </View>
-            <Text style={[styles.checkInTitle, { color: colors.text }]}>
-              You're here!
-            </Text>
-            <Text style={[styles.checkInDescription, { color: colors.textSecondary }]}>
-              Check in to see who else is looking to connect
-            </Text>
-
-            {/* Location Status */}
-            <Card style={[styles.locationCard, { backgroundColor: colors.muted + '30' }]}>
-              <View style={styles.locationStatus}>
-                {userLocation ? (
-                  isWithinRange() ? (
-                    <>
-                      <Text style={[styles.statusIcon, { color: '#10B981' }]}>✅</Text>
-                      <Text style={[styles.statusText, { color: colors.text }]}>
-                        Location verified - you're at the venue!
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={[styles.statusIcon, { color: '#F59E0B' }]}>⚠️</Text>
-                      <Text style={[styles.statusText, { color: colors.text }]}>
-                        You seem far from this venue. Get closer to check in.
-                      </Text>
-                    </>
-                  )
-                ) : locationError ? (
-                  <>
-                    <Text style={[styles.statusIcon, { color: '#3B82F6' }]}>ℹ️</Text>
-                    <Text style={[styles.statusText, { color: colors.textSecondary }]}>
-                      {locationError}
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <ActivityIndicator size="small" color={colors.secondary} />
-                    <Text style={[styles.statusText, { color: colors.textSecondary }]}>
-                      Getting your location...
-                    </Text>
-                  </>
-                )}
+        {/* Profile Card */}
+        <View style={styles.profileContainer}>
+          <View style={styles.profileCard}>
+            <LinearGradient
+              colors={['#000000', '#1a1a1a']}
+              style={styles.cardGradient}
+            >
+              {/* Profile Photo */}
+              <View style={styles.photoContainer}>
+                <View style={styles.photoPlaceholder}>
+                  <Ionicons name="person" size={80} color="#E6C547" />
+                </View>
+                <View style={styles.onlineIndicator} />
               </View>
-            </Card>
 
-            <Button
-              title={
-                checkInMutation.isPending
-                  ? 'Checking In...'
-                  : !isWithinRange() && userLocation
-                  ? 'Get Closer to Check In'
-                  : 'Check In'
-              }
-              onPress={handleCheckIn}
-              disabled={checkInMutation.isPending || (!isWithinRange() && userLocation)}
-              loading={checkInMutation.isPending}
-              style={styles.checkInButton}
-              icon={checkInMutation.isPending ? null : '✅'}
-            />
+              {/* Profile Info */}
+              <View style={styles.profileInfo}>
+                <Text style={[styles.profileName, { color: colors.text }]}>
+                  {currentProfile.name}, {currentProfile.age}
+                </Text>
+                <Text style={[styles.profileDistance, { color: colors.textSecondary }]}>
+                  {currentProfile.distance} • {currentProfile.lastActive}
+                </Text>
+                
+                <Text style={[styles.profileBio, { color: colors.text }]}>
+                  {currentProfile.bio}
+                </Text>
+
+                {/* Interests */}
+                <View style={styles.interestsContainer}>
+                  <Text style={[styles.interestsTitle, { color: colors.text }]}>Interests:</Text>
+                  <View style={styles.interestsList}>
+                    {currentProfile.interests.map((interest, index) => (
+                      <View key={index} style={styles.interestTag}>
+                        <Text style={styles.interestText}>{interest}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
           </View>
 
-          {/* Mode Selection */}
-          <Card style={styles.modeCard}>
-            <Text style={[styles.modeTitle, { color: colors.text }]}>
-              What are you looking for?
-            </Text>
-            <View style={styles.modeButtons}>
-              <Button
-                title="Dating"
-                onPress={() => setMode('dating')}
-                variant={mode === 'dating' ? 'primary' : 'secondary'}
-                style={[
-                  styles.modeButton,
-                  mode === 'dating' && { backgroundColor: colors.primary },
-                ]}
-                icon="❤️"
-              />
-              <Button
-                title="Friends"
-                onPress={() => setMode('friends')}
-                variant={mode === 'friends' ? 'primary' : 'secondary'}
-                style={[
-                  styles.modeButton,
-                  mode === 'friends' && { backgroundColor: colors.primary },
-                ]}
-                icon="👥"
-              />
-            </View>
-          </Card>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.passButton}
+              onPress={handlePass}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={30} color="#FF6B6B" />
+            </TouchableOpacity>
 
-          {/* AI Recommendations Toggle */}
-          <Card style={styles.aiCard}>
-            <View style={styles.aiContent}>
-              <View style={styles.aiText}>
-                <Text style={[styles.aiTitle, { color: colors.text }]}>
-                  Smart Recommendations
-                </Text>
-                <Text style={[styles.aiDescription, { color: colors.textSecondary }]}>
-                  Use AI to prioritize compatible matches
-                </Text>
-              </View>
-              <Switch
-                value={aiRecommendations}
-                onValueChange={setAiRecommendations}
-              />
-            </View>
-          </Card>
-
-          {/* Venue Info */}
-          <Card style={styles.venueInfoCard}>
-            <View style={styles.venueStats}>
-              <View style={styles.venueStat}>
-                <Text style={[styles.venueStatIcon, { color: colors.accent }]}>🔥</Text>
-                <Text style={[styles.venueStatText, { color: colors.text }]}>
-                  <Text style={{ color: colors.accent, fontWeight: 'bold' }}>
-                    {venue.currentUsers || 0}
-                  </Text> people currently here
-                </Text>
-              </View>
-              {venue.description && (
-                <Text style={[styles.venueDescription, { color: colors.textSecondary }]}>
-                  {venue.description}
-                </Text>
-              )}
-              <View style={styles.venueTags}>
-                {venue.venueType && (
-                  <Text style={[styles.venueTag, { color: colors.textSecondary }]}>
-                    {venue.venueType.replace('_', ' ')}
-                  </Text>
-                )}
-                {venue.musicType && (
-                  <Text style={[styles.venueTag, { color: colors.textSecondary }]}>
-                    {venue.musicType} Music
-                  </Text>
-                )}
-                {venue.vibe && (
-                  <Text style={[styles.venueTag, { color: colors.textSecondary }]}>
-                    {venue.vibe} Vibe
-                  </Text>
-                )}
-              </View>
-            </View>
-          </Card>
+            <TouchableOpacity
+              style={styles.likeButton}
+              onPress={handleLike}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="heart" size={30} color="#4ECDC4" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -353,172 +276,214 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
+  backgroundGradient: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  errorIcon: {
-    fontSize: 32,
-    marginBottom: 16,
-  },
-  errorText: {
-    fontSize: 18,
-    marginBottom: 24,
-    textAlign: 'center',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 20,
+    paddingTop: 40,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6C547',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  backButtonText: {
+    color: '#E6C547',
+    fontSize: 16,
+    marginLeft: 5,
+    fontFamily: 'Georgia',
   },
   venueInfo: {
     flex: 1,
   },
   venueName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     fontFamily: 'Georgia',
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  venueAddress: {
+  venueDetails: {
     fontSize: 14,
+    fontFamily: 'Georgia',
     marginTop: 2,
   },
-  backButton: {
-    paddingHorizontal: 12,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  checkInSection: {
+  profileCounter: {
     alignItems: 'center',
-    marginBottom: 24,
   },
-  checkInIcon: {
-    marginBottom: 16,
-  },
-  checkInIconText: {
-    fontSize: 32,
-  },
-  checkInTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  checkInDescription: {
+  counterText: {
     fontSize: 14,
+    fontFamily: 'Georgia',
+  },
+  profileContainer: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+  },
+  profileCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    shadowColor: '#E6C547',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 15,
+  },
+  cardGradient: {
+    padding: 20,
+  },
+  photoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+    position: 'relative',
+  },
+  photoPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E6C547',
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4ECDC4',
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
+  profileInfo: {
+    alignItems: 'center',
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    fontFamily: 'Georgia',
+    marginBottom: 5,
+  },
+  profileDistance: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginBottom: 15,
+  },
+  profileBio: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+    lineHeight: 22,
+    marginBottom: 20,
   },
-  locationCard: {
-    marginBottom: 24,
-    padding: 12,
+  interestsContainer: {
+    width: '100%',
   },
-  locationStatus: {
+  interestsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'Georgia',
+    marginBottom: 10,
+  },
+  interestsList: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  interestTag: {
+    backgroundColor: '#E6C547',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    margin: 3,
+  },
+  interestText: {
+    color: '#000000',
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontWeight: 'bold',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  passButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+  },
+  likeButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#4ECDC4',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    fontFamily: 'Georgia',
+    marginBottom: 20,
+  },
+  noMoreContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  noMoreTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    fontFamily: 'Georgia',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  noMoreText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 30,
+  },
+  continueButton: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  continueButtonGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusIcon: {
+  continueButtonText: {
     fontSize: 16,
-    marginRight: 8,
-  },
-  statusText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  checkInButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-  },
-  modeCard: {
-    marginBottom: 16,
-  },
-  modeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  modeButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modeButton: {
-    flex: 1,
-  },
-  aiCard: {
-    marginBottom: 16,
-  },
-  aiContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  aiText: {
-    flex: 1,
-    marginRight: 16,
-  },
-  aiTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  aiDescription: {
-    fontSize: 14,
-  },
-  venueInfoCard: {
-    marginBottom: 24,
-  },
-  venueStats: {
-    alignItems: 'center',
-  },
-  venueStat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  venueStatIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  venueStatText: {
-    fontSize: 14,
-  },
-  venueDescription: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  venueTags: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  venueTag: {
-    fontSize: 12,
-    textTransform: 'capitalize',
+    fontFamily: 'Georgia',
+    color: '#000000',
+    fontWeight: 'bold',
   },
 });
 

@@ -134,13 +134,15 @@ const Button = ({
         onPress={onPress}
         disabled={disabled || loading}
         activeOpacity={0.7}
+        style={[styles.button, styles.medium, style]}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         {...props}
       >
         <LinearGradient
           colors={['#D4AF37', '#B8860B', '#9A7B0F']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.button, styles.medium, style]}
+          style={styles.gradient}
         >
           {renderButtonContent()}
         </LinearGradient>
@@ -154,6 +156,7 @@ const Button = ({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       {...props}
     >
       {renderButtonContent()}
@@ -208,6 +211,14 @@ const styles = StyleSheet.create({
   },
   largeText: {
     fontSize: 20,
+  },
+  gradient: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
   },
 });
 

@@ -7,6 +7,7 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -67,6 +68,7 @@ const LandingScreen = () => {
   );
 
   const handleLogin = () => {
+    console.log('Button pressed!');
     navigation.navigate('Login');
   };
 
@@ -76,9 +78,10 @@ const LandingScreen = () => {
         source={require('../../assets/background.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
+        blurRadius={2}
       >
         <LinearGradient
-          colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)', 'rgba(0,0,0,0.4)']}
+          colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)', 'rgba(0,0,0,0.7)']}
           style={styles.gradient}
         >
           <SafeAreaView style={styles.safeArea}>
@@ -100,30 +103,32 @@ const LandingScreen = () => {
 
               {/* Login Button */}
               <View style={styles.loginContainer}>
-                <Button
-                  title="Find Your Crowd"
+                <TouchableOpacity
                   onPress={handleLogin}
-                  style={styles.loginButton}
-                />
+                  style={[styles.loginButton, styles.testButton]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.buttonText}>Find Your Crowd</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Features */}
               <View style={styles.features}>
                 <View style={styles.feature}>
                   <Ionicons name="paper-plane" size={20} color={colors.accent} style={styles.solidIcon} />
-                  <Text style={[styles.featureText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.featureText, { color: '#ffffff' }]}>
                     Find people at your favorite bars & clubs
                   </Text>
                 </View>
                 <View style={styles.feature}>
                   <Ionicons name="heart" size={20} color={colors.accent} style={styles.solidIcon} />
-                  <Text style={[styles.featureText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.featureText, { color: '#ffffff' }]}>
                     Connect with like-minded individuals
                   </Text>
                 </View>
                 <View style={styles.feature}>
                   <Ionicons name="wine" size={20} color={colors.accent} style={styles.solidIcon} />
-                  <Text style={[styles.featureText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.featureText, { color: '#ffffff' }]}>
                     Meet over drinks, not apps
                   </Text>
                 </View>
@@ -209,7 +214,28 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     alignSelf: 'center',
-    width: 200,
+    width: '80%',
+    minWidth: 200,
+    minHeight: 50,
+  },
+  testButton: {
+    backgroundColor: '#D4AF37',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'Georgia',
   },
   features: {
     width: '100%',
@@ -236,13 +262,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#ffffff',
     textShadowColor: 'rgba(0,0,0,0.9)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
     lineHeight: 24,
     shadowColor: '#ffffff',
     shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 6,
-    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOpacity: 0.6,
   },
 });
 

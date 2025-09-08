@@ -41,7 +41,9 @@
     },
     "plugins": [
       "expo-location",
-      "expo-image-picker"
+      "expo-image-picker",
+      "expo-font",
+      "expo-secure-store"
     ]
   }
 }

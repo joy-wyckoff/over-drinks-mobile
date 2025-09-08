@@ -12,6 +12,7 @@ import ProfileCreationScreen from '../screens/ProfileCreationScreen';
 import VenueDiscoveryScreen from '../screens/VenueDiscoveryScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import ProfileBrowsingScreen from '../screens/ProfileBrowsingScreen';
+import VenueSelectionScreen from '../screens/VenueSelectionScreen';
 
 const Stack = createStackNavigator();
 
@@ -43,11 +44,12 @@ const AppNavigator = () => {
         </>
       ) : (
         <>
+          <Stack.Screen name="VenueDiscovery" component={VenueDiscoveryScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="ProfileCreation" component={ProfileCreationScreen} />
-          <Stack.Screen name="VenueDiscovery" component={VenueDiscoveryScreen} />
           <Stack.Screen name="CheckIn" component={CheckInScreen} />
           <Stack.Screen name="ProfileBrowsing" component={ProfileBrowsingScreen} />
+          <Stack.Screen name="VenueSelection" component={VenueSelectionScreen} />
         </>
       )}
     </Stack.Navigator>

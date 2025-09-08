@@ -34,6 +34,7 @@ const LoginScreen = ({ navigation }) => {
   const [enterButtonHovered, setEnterButtonHovered] = useState(false);
   const [createAccountHovered, setCreateAccountHovered] = useState(false);
   const [forgotPasswordHovered, setForgotPasswordHovered] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -60,7 +61,12 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={styles.scrollContent}
+    >
       <LinearGradient
         colors={['#1A0D0F', '#281218', '#381B22']}
         start={{ x: 0, y: 0 }}
@@ -70,11 +76,6 @@ const LoginScreen = ({ navigation }) => {
         <SafeAreaView style={styles.safeArea}>
           <View 
             style={styles.content}
-            onTouchStart={() => {
-              setContainerTouched(false);
-              setUsernameFocused(false);
-              setPasswordFocused(false);
-            }}
           >
             {/* Header */}
             <View style={styles.header}>
@@ -113,10 +114,6 @@ const LoginScreen = ({ navigation }) => {
                 ]}
                 onMouseEnter={() => setContainerHovered(true)}
                 onMouseLeave={() => setContainerHovered(false)}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  setContainerTouched(true);
-                }}
               >
               <LinearGradient
                 colors={['#000000', '#1a1a1a']}
@@ -129,7 +126,7 @@ const LoginScreen = ({ navigation }) => {
                 {/* Username Input */}
                 <View style={styles.inputGroup} onTouchStart={(e) => {
                   e.stopPropagation();
-                  setContainerTouched(true);
+                  setUsernameFocused(true);
                 }}>
                   <Text style={styles.inputLabel}>Username</Text>
                   <View style={[
@@ -143,9 +140,7 @@ const LoginScreen = ({ navigation }) => {
                       placeholderTextColor="#E6C547"
                       style={styles.inputField}
                       autoCapitalize="none"
-                      autoComplete="off"
-                      textContentType="none"
-                      autoCorrect={false}
+                      keyboardType="default"
                       onFocus={() => setUsernameFocused(true)}
                       onBlur={() => setUsernameFocused(false)}
                     />
@@ -155,7 +150,7 @@ const LoginScreen = ({ navigation }) => {
                 {/* Password Input */}
                 <View style={styles.inputGroup} onTouchStart={(e) => {
                   e.stopPropagation();
-                  setContainerTouched(true);
+                  setPasswordFocused(true);
                 }}>
                   <Text style={styles.inputLabel}>Password</Text>
                   <View style={[
@@ -168,10 +163,21 @@ const LoginScreen = ({ navigation }) => {
                       placeholder="Enter your password"
                       placeholderTextColor="#E6C547"
                       style={styles.inputField}
-                      secureTextEntry
+                      secureTextEntry={!showPassword}
                       onFocus={() => setPasswordFocused(true)}
                       onBlur={() => setPasswordFocused(false)}
                     />
+                    <TouchableOpacity
+                      style={styles.passwordToggle}
+                      onPress={() => setShowPassword(!showPassword)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons 
+                        name={showPassword ? "eye-off" : "eye"} 
+                        size={20} 
+                        color="#E6C547" 
+                      />
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -257,10 +263,16 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#1A0D0F', // Set the darkest gradient color as background
+  },
+  scrollContent: {
+    flexGrow: 1,
+    minHeight: '100%',
+    paddingBottom: 200, // Extra padding to prevent screen cut off when scrolling
   },
   backgroundGradient: {
     flex: 1,
-    minHeight: height,
+    minHeight: '100%',
   },
   safeArea: {
     flex: 1,
@@ -399,6 +411,8 @@ const styles = StyleSheet.create({
     borderColor: '#E6C547',
     justifyContent: 'center',
     paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   inputWrapperFocused: {
     borderColor: '#E6C547',
@@ -417,9 +431,13 @@ const styles = StyleSheet.create({
   },
   inputField: {
     fontSize: 16,
-    color: '#E6C547',
+    color: '#F5F5DC',
     fontFamily: 'Georgia',
     flex: 1,
+  },
+  passwordToggle: {
+    padding: 4,
+    marginLeft: 8,
   },
   enterButton: {
     marginBottom: 16,

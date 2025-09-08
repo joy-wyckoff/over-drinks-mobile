@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
   ScrollView,
   Dimensions,
   Alert,
@@ -20,7 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 const { width, height } = Dimensions.get('window');
 
 const AccountCreationScreen = ({ navigation }) => {
-  const { createAccount } = useAuth();
+  const { createAccount, login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [phoneFocused, setPhoneFocused] = useState(false);
@@ -71,6 +70,8 @@ const AccountCreationScreen = ({ navigation }) => {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showSexualityPicker, setShowSexualityPicker] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const countries = [
     { name: 'United States', code: '+1', flag: '🇺🇸' },
@@ -151,13 +152,16 @@ const AccountCreationScreen = ({ navigation }) => {
       const accountsData = await AsyncStorage.getItem('userAccounts');
       if (accountsData) {
         const accounts = JSON.parse(accountsData);
+        
         const exists = accounts.some(account => {
           if (field === 'email') {
             return account.email && account.email.toLowerCase().trim() === value.toLowerCase().trim();
           } else if (field === 'phoneNumber') {
             const cleaned = value.replace(/\D/g, '');
             const fullPhone = `${selectedCountry.code}${cleaned}`;
-            return account.phoneNumber && account.phoneNumber === fullPhone;
+            const storedCleaned = account.phoneNumber ? account.phoneNumber.replace(/\D/g, '') : '';
+            
+            return storedCleaned && storedCleaned === fullPhone.replace(/\D/g, '');
           } else if (field === 'username') {
             return account.username && account.username.toLowerCase().trim() === value.toLowerCase().trim();
           }
@@ -196,11 +200,12 @@ const AccountCreationScreen = ({ navigation }) => {
           } else if (!validateEmail(value)) {
             message = 'Please enter a valid email address';
           } else {
-            isUnique = !(await checkForDuplicates('email', value));
-            if (!isUnique) {
+            const isDuplicate = await checkForDuplicates('email', value);
+            isUnique = !isDuplicate;
+            if (isDuplicate) {
               message = 'This email is already registered';
             } else {
-              message = 'Email looks good!';
+              message = '';
               isValid = true;
             }
           }
@@ -210,11 +215,12 @@ const AccountCreationScreen = ({ navigation }) => {
           } else if (!validatePhoneNumber(value) || !validatePhoneNumberDigits(value)) {
             message = 'Please enter a valid 10-digit phone number';
           } else {
-            isUnique = !(await checkForDuplicates('phoneNumber', value));
-            if (!isUnique) {
+            const isDuplicate = await checkForDuplicates('phoneNumber', value);
+            isUnique = !isDuplicate;
+            if (isDuplicate) {
               message = 'This phone number is already registered';
             } else {
-              message = 'Phone number looks good!';
+              message = '';
               isValid = true;
             }
           }
@@ -228,8 +234,9 @@ const AccountCreationScreen = ({ navigation }) => {
           } else if (containsBadWords(value)) {
             message = 'Username contains inappropriate content';
           } else {
-            isUnique = !(await checkForDuplicates('username', value));
-            if (!isUnique) {
+            const isDuplicate = await checkForDuplicates('username', value);
+            isUnique = !isDuplicate;
+            if (isDuplicate) {
               message = 'This username is already taken';
             } else {
               message = '';
@@ -248,7 +255,7 @@ const AccountCreationScreen = ({ navigation }) => {
           } else if (!/[^A-Za-z0-9]/.test(value)) {
             message = 'Password must contain at least 1 special character';
           } else {
-            message = 'Password looks good!';
+            message = '';
             isValid = true;
           }
         } else if (field === 'confirmPassword') {
@@ -268,7 +275,7 @@ const AccountCreationScreen = ({ navigation }) => {
           } else if (!validateBirthdayFormat(value)) {
             message = 'Please enter a valid date';
           } else {
-            message = 'Birthday looks good!';
+            message = '';
             isValid = true;
           }
         }
@@ -295,9 +302,20 @@ const AccountCreationScreen = ({ navigation }) => {
       const invalidFields = requiredFields.filter(field => validationStatus[field] !== 'valid');
       
       if (invalidFields.length > 0) {
+        const fieldNames = {
+          email: 'Email',
+          phoneNumber: 'Phone Number',
+          username: 'Username',
+          password: 'Password',
+          confirmPassword: 'Confirm Password',
+          birthday: 'Birthday'
+        };
+        
+        const invalidFieldNames = invalidFields.map(field => fieldNames[field]).join(', ');
+        
         Alert.alert(
           'Validation Error', 
-          'Please fix all validation errors before creating your account. Check the messages below each field for specific requirements.'
+          `Please fix the following fields: ${invalidFieldNames}. Check the messages below each field for specific requirements.`
         );
         setLoading(false);
         return;
@@ -318,7 +336,26 @@ const AccountCreationScreen = ({ navigation }) => {
       if (!formData.sexuality.trim()) newErrors.sexuality = 'Sexuality is required';
 
       if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
+        const missingFields = Object.keys(newErrors).map(field => {
+          const fieldNames = {
+            firstName: 'First Name',
+            lastName: 'Last Name',
+            email: 'Email',
+            phoneNumber: 'Phone Number',
+            username: 'Username',
+            password: 'Password',
+            confirmPassword: 'Confirm Password',
+            birthday: 'Birthday',
+            gender: 'Gender',
+            sexuality: 'Sexuality'
+          };
+          return fieldNames[field] || field;
+        });
+        
+        Alert.alert(
+          'Missing Information',
+          `Please fill in the following required fields: ${missingFields.join(', ')}.`
+        );
         setLoading(false);
         return;
       }
@@ -329,11 +366,15 @@ const AccountCreationScreen = ({ navigation }) => {
       const usernameExists = await checkForDuplicates('username', formData.username);
 
       if (emailExists || phoneExists || usernameExists) {
-        const duplicateErrors = {};
-        if (emailExists) duplicateErrors.email = 'Email already exists';
-        if (phoneExists) duplicateErrors.phoneNumber = 'Phone number already exists';
-        if (usernameExists) duplicateErrors.username = 'Username already exists';
-        setErrors(duplicateErrors);
+        const duplicateFields = [];
+        if (emailExists) duplicateFields.push('Email');
+        if (phoneExists) duplicateFields.push('Phone Number');
+        if (usernameExists) duplicateFields.push('Username');
+        
+        Alert.alert(
+          'Account Already Exists',
+          `The following information is already registered: ${duplicateFields.join(', ')}. Please use different information or try logging in.`
+        );
         setLoading(false);
         return;
       }
@@ -355,10 +396,29 @@ const AccountCreationScreen = ({ navigation }) => {
 
       await createAccount(accountData);
       
+      // Automatically log the user in after account creation
+      await login(formData.username, formData.password, true); // true for rememberMe
+      
+      // Show "Remember Me" popup
       Alert.alert(
-        'Account Created!',
-        'Your account has been created successfully. Please complete your profile.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        'Save Login Info?',
+        'Would you like to save your username and password to this device for faster login?',
+        [
+          {
+            text: 'Not Now',
+            style: 'cancel',
+            onPress: () => {
+              // User is already logged in, navigation will happen automatically via AuthContext
+            }
+          },
+          {
+            text: 'Save',
+            onPress: async () => {
+              // Credentials are already saved from the login call above
+              // User is already logged in, navigation will happen automatically via AuthContext
+            }
+          }
+        ]
       );
       
     } catch (error) {
@@ -456,11 +516,12 @@ const AccountCreationScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <ImageBackground
-        source={require('../../assets/background.png')}
-        style={styles.backgroundImage}
-        resizeMode="cover"
+    <>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
       >
         <LinearGradient
           colors={['#1A0D0F', '#281218', '#381B22']}
@@ -522,7 +583,10 @@ const AccountCreationScreen = ({ navigation }) => {
                       <Text style={styles.sectionTitle}>Personal Information</Text>
                       
                       <View style={styles.row}>
-                         <View style={[styles.halfInput, { marginRight: 8 }]}>
+                         <View style={[styles.halfInput, { marginRight: 8 }]} onTouchStart={(e) => {
+                           e.stopPropagation();
+                           setFirstNameFocused(true);
+                         }}>
                            <Text style={styles.label}>First Name</Text>
                            <View style={[
                              styles.inputWrapper,
@@ -541,7 +605,10 @@ const AccountCreationScreen = ({ navigation }) => {
                            {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
                          </View>
                         
-                        <View style={[styles.halfInput, { marginLeft: 8 }]}>
+                        <View style={[styles.halfInput, { marginLeft: 8 }]} onTouchStart={(e) => {
+                          e.stopPropagation();
+                          setLastNameFocused(true);
+                        }}>
                           <Text style={styles.label}>Last Name</Text>
                           <View style={[
                             styles.inputWrapper,
@@ -562,7 +629,10 @@ const AccountCreationScreen = ({ navigation }) => {
                       </View>
 
                       {/* Email */}
-                      <View style={styles.inputGroup}>
+                      <View style={styles.inputGroup} onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setEmailFocused(true);
+                      }}>
                         <Text style={styles.label}>Email</Text>
                         <View style={[
                           styles.inputWrapper,
@@ -601,7 +671,10 @@ const AccountCreationScreen = ({ navigation }) => {
                        </View>
 
                       {/* Phone Number */}
-                      <View style={styles.inputGroup}>
+                      <View style={styles.inputGroup} onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setPhoneFocused(true);
+                      }}>
                         <Text style={styles.label}>Phone Number</Text>
                         <View style={styles.phoneContainer}>
                           <TouchableOpacity
@@ -650,7 +723,10 @@ const AccountCreationScreen = ({ navigation }) => {
 
 
                        {/* Birthday */}
-                       <View style={styles.inputGroup}>
+                       <View style={styles.inputGroup} onTouchStart={(e) => {
+                         e.stopPropagation();
+                         setBirthdayFocused(true);
+                       }}>
                          <Text style={styles.label}>Birthday</Text>
                          <View style={[
                            styles.inputWrapper,
@@ -729,7 +805,10 @@ const AccountCreationScreen = ({ navigation }) => {
                        <Text style={styles.sectionTitle}>Account Information</Text>
                        
                        {/* Username */}
-                       <View style={styles.inputGroup}>
+                       <View style={styles.inputGroup} onTouchStart={(e) => {
+                         e.stopPropagation();
+                         setUsernameFocused(true);
+                       }}>
                          <Text style={styles.label}>Username</Text>
                          <View style={[
                            styles.inputWrapper,
@@ -769,22 +848,45 @@ const AccountCreationScreen = ({ navigation }) => {
                          {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
                        </View>
                        
-                       <View style={styles.inputGroup}>
+                       <View style={styles.inputGroup} onTouchStart={(e) => {
+                         e.stopPropagation();
+                         setPasswordFocused(true);
+                       }}>
                         <Text style={styles.label}>Password</Text>
                         <View style={[
-                          styles.inputWrapper,
+                          styles.passwordInputWrapper,
                           passwordFocused && styles.inputWrapperFocused
                         ]}>
-                          <TextInput
-                            value={formData.password}
-                            onChangeText={(value) => updateFormData('password', value)}
-                            placeholder="Create a password"
-                            placeholderTextColor="#E6C547"
-                            style={styles.inputField}
-                            secureTextEntry
-                            onFocus={() => setPasswordFocused(true)}
-                            onBlur={() => setPasswordFocused(false)}
-                          />
+                            <TextInput
+                              value={formData.password}
+                              onChangeText={(value) => updateFormData('password', value)}
+                              placeholder="Create a password"
+                              placeholderTextColor="#E6C547"
+                              style={[styles.inputField, styles.passwordInput]}
+                              secureTextEntry={!showPassword}
+                              onFocus={() => setPasswordFocused(true)}
+                              onBlur={() => setPasswordFocused(false)}
+                              autoComplete="off"
+                              textContentType="none"
+                              autoCorrect={false}
+                              autoCapitalize="none"
+                              spellCheck={false}
+                              selectionColor="#E6C547"
+                              underlineColorAndroid="transparent"
+                              keyboardType="default"
+                              importantForAutofill="no"
+                              passwordRules=""
+                            />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowPassword(!showPassword)}
+                          >
+                            <Ionicons 
+                              name={showPassword ? "eye-off" : "eye"} 
+                              size={20} 
+                              color="#E6C547" 
+                            />
+                          </TouchableOpacity>
                           {getValidationIcon('password') && (
                             <Ionicons
                               name={getValidationIcon('password')}
@@ -803,25 +905,51 @@ const AccountCreationScreen = ({ navigation }) => {
                              {validationMessages.password}
                            </Text>
                          )}
+                         <Text style={styles.passwordRequirements}>
+                           Password must have: 8+ characters, 1 uppercase, 1 number, 1 special character
+                         </Text>
                          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
                        </View>
 
-                      <View style={styles.inputGroup}>
+                      <View style={styles.inputGroup} onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setConfirmPasswordFocused(true);
+                      }}>
                         <Text style={styles.label}>Confirm Password</Text>
                         <View style={[
-                          styles.inputWrapper,
+                          styles.passwordInputWrapper,
                           confirmPasswordFocused && styles.inputWrapperFocused
                         ]}>
-                          <TextInput
-                            value={formData.confirmPassword}
-                            onChangeText={(value) => updateFormData('confirmPassword', value)}
-                            placeholder="Confirm your password"
-                            placeholderTextColor="#E6C547"
-                            style={styles.inputField}
-                            secureTextEntry
-                            onFocus={() => setConfirmPasswordFocused(true)}
-                            onBlur={() => setConfirmPasswordFocused(false)}
-                          />
+                            <TextInput
+                              value={formData.confirmPassword}
+                              onChangeText={(value) => updateFormData('confirmPassword', value)}
+                              placeholder="Confirm your password"
+                              placeholderTextColor="#E6C547"
+                              style={[styles.inputField, styles.passwordInput]}
+                              secureTextEntry={!showConfirmPassword}
+                              onFocus={() => setConfirmPasswordFocused(true)}
+                              onBlur={() => setConfirmPasswordFocused(false)}
+                              autoComplete="off"
+                              textContentType="none"
+                              autoCorrect={false}
+                              autoCapitalize="none"
+                              spellCheck={false}
+                              selectionColor="#E6C547"
+                              underlineColorAndroid="transparent"
+                              keyboardType="default"
+                              importantForAutofill="no"
+                              passwordRules=""
+                            />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                          >
+                            <Ionicons 
+                              name={showConfirmPassword ? "eye-off" : "eye"} 
+                              size={20} 
+                              color="#E6C547" 
+                            />
+                          </TouchableOpacity>
                           {getValidationIcon('confirmPassword') && (
                             <Ionicons
                               name={getValidationIcon('confirmPassword')}
@@ -865,10 +993,10 @@ const AccountCreationScreen = ({ navigation }) => {
               </View>
             </View>
           </SafeAreaView>
-        </LinearGradient>
-      </ImageBackground>
+      </LinearGradient>
+    </ScrollView>
 
-      {/* Gender Picker Modal */}
+    {/* Gender Picker Modal */}
       <Modal
         visible={showGenderPicker}
         transparent={true}
@@ -1077,21 +1205,65 @@ const AccountCreationScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+
+      {/* Country Picker Modal */}
+      <Modal
+        visible={showCountryPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCountryPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Country</Text>
+            
+            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={false}>
+              {countries.map((country) => (
+                <TouchableOpacity
+                  key={country.name}
+                  style={[
+                    styles.optionItem,
+                    selectedCountry.name === country.name && styles.optionItemSelected
+                  ]}
+                  onPress={() => {
+                    setSelectedCountry(country);
+                    setShowCountryPicker(false);
+                  }}
+                >
+                  <Text style={styles.countryFlag}>{country.flag}</Text>
+                  <Text style={[
+                    styles.optionText,
+                    selectedCountry.name === country.name && styles.optionTextSelected
+                  ]}>
+                    {country.name} {country.code}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => setShowCountryPicker(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#1A0D0F', // Set the darkest gradient color as background
   },
   backgroundGradient: {
     flex: 1,
+    minHeight: '100%',
   },
   safeArea: {
     flex: 1,
@@ -1226,15 +1398,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     position: 'relative',
     flexDirection: 'row',
+    // Remove any highlighting
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   inputWrapperFocused: {
     borderColor: '#E6C547',
     borderWidth: 2,
-    shadowColor: '#E6C547',
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
+    // Remove highlighting effects
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
+    elevation: 0,
   },
   inputField: {
     fontSize: 16,
@@ -1243,6 +1422,59 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'left',
     textAlignVertical: 'center',
+  },
+  passwordRequirements: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  passwordInput: {
+    color: '#F5F5DC', // Ensure consistent text color
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    backgroundColor: 'transparent', // Override iOS highlighting
+    textDecorationLine: 'none', // Remove any text decoration
+    textShadowColor: 'transparent', // Remove text shadow
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 0,
+    // Override iOS password suggestion highlighting
+    tintColor: '#F5F5DC',
+    selectionColor: '#E6C547',
+    // Remove any background highlighting
+    borderWidth: 0,
+    outline: 'none',
+    // Force consistent styling
+    padding: 0,
+    margin: 0,
+    // Prevent iOS from applying any default styling
+    textAlign: 'left',
+    textAlignVertical: 'center',
+  },
+  passwordInputWrapper: {
+    height: 48,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    position: 'relative',
+    flexDirection: 'row',
+    // Completely remove any highlighting
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+    // Remove any background effects
+    overflow: 'hidden',
+    // Force consistent background
+    borderStyle: 'solid',
+    // Prevent any iOS highlighting
+    transform: [{ scale: 1 }],
   },
   validationIcon: {
     position: 'absolute',
@@ -1468,6 +1700,20 @@ const styles = StyleSheet.create({
   pickerOptionTextSelected: {
     color: '#E6C547',
     fontWeight: 'bold',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 200, // Extra padding to prevent screen cut off when scrolling
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 40, // Position to the left of the validation icon
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 30,
+    zIndex: 1,
   },
 });
 

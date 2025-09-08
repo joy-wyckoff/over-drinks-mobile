@@ -8,11 +8,15 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import TextArea from '../components/ui/TextArea';
@@ -112,6 +116,10 @@ const ProfileCreationScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [existingProfile, setExistingProfile] = useState(null);
   
+  // New state for search and image picker
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
+  
   // Validation states
   const [validationErrors, setValidationErrors] = useState({
     photo: false,
@@ -155,7 +163,43 @@ const ProfileCreationScreen = () => {
     }
   };
 
+  // Filter interests based on search query
+  const filteredInterests = interests.filter(interest =>
+    interest.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    interest.value.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handleImagePicker = async () => {
+    setShowImagePickerModal(true);
+  };
+
+  const handleCameraCapture = async () => {
+    setShowImagePickerModal(false);
+    
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Permission to access camera is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setProfilePhoto(result.assets[0].uri);
+      setFormData(prev => ({ ...prev, profilePhotoUrl: result.assets[0].uri }));
+      setValidationErrors(prev => ({ ...prev, photo: false }));
+    }
+  };
+
+  const handleCameraRollSelection = async () => {
+    setShowImagePickerModal(false);
+    
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
@@ -261,16 +305,8 @@ const ProfileCreationScreen = () => {
         // Mark profile as completed
         markProfileCompleted();
         
-        Alert.alert(
-          'Profile Complete!', 
-          'Your profile has been successfully created. Welcome to Over Drinks!',
-          [
-            {
-              text: 'Get Started',
-              onPress: () => navigation.navigate('Home')
-            }
-          ]
-        );
+        // Navigate directly to venue discovery screen without popup
+        navigation.navigate('VenueDiscovery');
       } else {
         Alert.alert('Error', 'Failed to save profile. Please try again.');
       }
@@ -405,8 +441,25 @@ const ProfileCreationScreen = () => {
                 }
               </Text>
               
+              {/* Search Bar */}
+              <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+                <TextInput
+                  style={[styles.searchInput, { color: colors.text, borderColor: colors.border }]}
+                  placeholder="Search interests..."
+                  placeholderTextColor={colors.textSecondary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                    <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              
               <View style={styles.interestsGrid}>
-                {interests.map((interest) => (
+                {filteredInterests.map((interest) => (
                   <TouchableOpacity
                     key={interest.value}
                     style={[
@@ -442,24 +495,75 @@ const ProfileCreationScreen = () => {
             </View>
 
             {/* Submit Button */}
-            <Button
-              title={
-                profilePhoto && formData.bio.trim() && selectedInterests.length === 5
-                  ? (existingProfile ? 'Update Profile' : 'Complete Profile ✓')
-                  : (existingProfile ? 'Update Profile' : 'Complete Profile')
-              }
+            <TouchableOpacity
+              style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
               onPress={handleSubmit}
-              loading={isLoading}
-              style={[
-                styles.submitButton,
-                profilePhoto && formData.bio.trim() && selectedInterests.length === 5 && {
-                  backgroundColor: '#10b981', // Green when complete
-                }
-              ]}
-            />
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#E6C547', '#D4AF37', '#B8860B']}
+                style={styles.submitButtonGradient}
+              >
+                <Text style={styles.submitButtonText}>
+                  {isLoading 
+                    ? (existingProfile ? 'Updating Profile...' : 'Creating Profile...')
+                    : (profilePhoto && formData.bio.trim() && selectedInterests.length === 5
+                        ? (existingProfile ? 'Update Profile ✓' : 'Complete Profile ✓')
+                        : (existingProfile ? 'Update Profile' : 'Complete Profile')
+                      )
+                  }
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </Card>
         </View>
       </ScrollView>
+      
+      {/* Image Picker Modal */}
+      <Modal
+        visible={showImagePickerModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowImagePickerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Choose Photo Source
+            </Text>
+            
+            <TouchableOpacity
+              style={[styles.modalOption, { borderColor: colors.border }]}
+              onPress={handleCameraCapture}
+            >
+              <Ionicons name="camera" size={24} color={colors.primary} />
+              <Text style={[styles.modalOptionText, { color: colors.text }]}>
+                Take Photo
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.modalOption, { borderColor: colors.border }]}
+              onPress={handleCameraRollSelection}
+            >
+              <Ionicons name="images" size={24} color={colors.primary} />
+              <Text style={[styles.modalOptionText, { color: colors.text }]}>
+                Choose from Gallery
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: colors.muted }]}
+              onPress={() => setShowImagePickerModal(false)}
+            >
+              <Text style={[styles.modalButtonText, { color: colors.text }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -586,6 +690,98 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     width: '100%',
+    marginTop: 24,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonGradient: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  // Search bar styles
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    paddingVertical: 8,
+  },
+  clearButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    maxWidth: 300,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: 'Georgia',
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    marginLeft: 12,
+    fontWeight: '500',
+  },
+  modalButton: {
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
   },
 });
 
