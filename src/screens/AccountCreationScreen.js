@@ -23,7 +23,6 @@ const AccountCreationScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [phoneFocused, setPhoneFocused] = useState(false);
-  const [usernameFocused, setUsernameFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   const [firstNameFocused, setFirstNameFocused] = useState(false);
@@ -35,7 +34,6 @@ const AccountCreationScreen = ({ navigation }) => {
     phoneNumber: '',
     firstName: '',
     lastName: '',
-    username: '',
     password: '',
     confirmPassword: '',
     birthday: '',
@@ -47,7 +45,6 @@ const AccountCreationScreen = ({ navigation }) => {
   const [validationStatus, setValidationStatus] = useState({
     email: 'idle',
     phoneNumber: 'idle',
-    username: 'idle',
     password: 'idle',
     confirmPassword: 'idle',
     birthday: 'idle',
@@ -58,7 +55,6 @@ const AccountCreationScreen = ({ navigation }) => {
   const [validationMessages, setValidationMessages] = useState({
     email: '',
     phoneNumber: '',
-    username: '',
     password: '',
     confirmPassword: '',
     birthday: '',
@@ -87,8 +83,6 @@ const AccountCreationScreen = ({ navigation }) => {
   const genderOptions = ['Male', 'Female', 'Non-binary', 'Other'];
   const sexualityOptions = ['Straight', 'Gay', 'Lesbian', 'Bisexual', 'Pansexual', 'Asexual', 'Other'];
 
-  // Bad words filter for username
-  const badWords = ['admin', 'root', 'test', 'user', 'guest', 'null', 'undefined', 'fuck', 'shit', 'damn', 'bitch', 'ass', 'hell', 'crap', 'stupid', 'idiot', 'dumb', 'loser', 'hate', 'kill', 'die', 'dead', 'sex', 'porn', 'nude', 'naked'];
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -130,15 +124,6 @@ const AccountCreationScreen = ({ navigation }) => {
     return true;
   };
 
-  const containsBadWords = (username) => {
-    const lowerUsername = username.toLowerCase();
-    return badWords.some(word => lowerUsername.includes(word.toLowerCase()));
-  };
-
-  const validateUsername = (username) => {
-    const usernameRegex = /^[a-zA-Z0-9._]+$/;
-    return usernameRegex.test(username) && username.length >= 3;
-  };
 
   const validatePassword = (password) => {
     return password.length >= 8 && 
@@ -149,21 +134,26 @@ const AccountCreationScreen = ({ navigation }) => {
 
   const checkForDuplicates = async (field, value) => {
     try {
+      // Check if value is valid before proceeding
+      if (!value || typeof value !== 'string') {
+        return false;
+      }
+      
       const accountsData = await AsyncStorage.getItem('userAccounts');
       if (accountsData) {
         const accounts = JSON.parse(accountsData);
         
         const exists = accounts.some(account => {
           if (field === 'email') {
-            return account.email && account.email.toLowerCase().trim() === value.toLowerCase().trim();
+            return account.email && 
+                   typeof account.email === 'string' && 
+                   account.email.toLowerCase().trim() === value.toLowerCase().trim();
           } else if (field === 'phoneNumber') {
             const cleaned = value.replace(/\D/g, '');
             const fullPhone = `${selectedCountry.code}${cleaned}`;
             const storedCleaned = account.phoneNumber ? account.phoneNumber.replace(/\D/g, '') : '';
             
             return storedCleaned && storedCleaned === fullPhone.replace(/\D/g, '');
-          } else if (field === 'username') {
-            return account.username && account.username.toLowerCase().trim() === value.toLowerCase().trim();
           }
           return false;
         });
@@ -185,7 +175,7 @@ const AccountCreationScreen = ({ navigation }) => {
     }
 
     // Real-time validation for specific fields
-    if (['email', 'phoneNumber', 'username', 'password', 'confirmPassword', 'birthday'].includes(field)) {
+    if (['email', 'phoneNumber', 'password', 'confirmPassword', 'birthday', 'gender', 'sexuality'].includes(field)) {
       setValidationStatus(prev => ({ ...prev, [field]: 'checking' }));
       setValidationMessages(prev => ({ ...prev, [field]: '' }));
       
@@ -219,25 +209,6 @@ const AccountCreationScreen = ({ navigation }) => {
             isUnique = !isDuplicate;
             if (isDuplicate) {
               message = 'This phone number is already registered';
-            } else {
-              message = '';
-              isValid = true;
-            }
-          }
-        } else if (field === 'username') {
-          if (!value) {
-            message = 'Username is required';
-          } else if (value.length < 3) {
-            message = 'Username must be at least 3 characters';
-          } else if (!validateUsername(value)) {
-            message = 'Username can only contain letters, numbers, . and _';
-          } else if (containsBadWords(value)) {
-            message = 'Username contains inappropriate content';
-          } else {
-            const isDuplicate = await checkForDuplicates('username', value);
-            isUnique = !isDuplicate;
-            if (isDuplicate) {
-              message = 'This username is already taken';
             } else {
               message = '';
               isValid = true;
@@ -278,6 +249,20 @@ const AccountCreationScreen = ({ navigation }) => {
             message = '';
             isValid = true;
           }
+        } else if (field === 'gender') {
+          if (!value) {
+            message = 'Gender is required';
+          } else {
+            message = 'Gender selected!';
+            isValid = true;
+          }
+        } else if (field === 'sexuality') {
+          if (!value) {
+            message = 'Sexuality is required';
+          } else {
+            message = 'Sexuality selected!';
+            isValid = true;
+          }
         }
 
         setValidationStatus(prev => ({
@@ -298,14 +283,13 @@ const AccountCreationScreen = ({ navigation }) => {
     
     try {
       // Check if all validation statuses are valid
-      const requiredFields = ['email', 'phoneNumber', 'username', 'password', 'confirmPassword', 'birthday'];
+      const requiredFields = ['email', 'phoneNumber', 'password', 'confirmPassword', 'birthday'];
       const invalidFields = requiredFields.filter(field => validationStatus[field] !== 'valid');
       
       if (invalidFields.length > 0) {
         const fieldNames = {
           email: 'Email',
           phoneNumber: 'Phone Number',
-          username: 'Username',
           password: 'Password',
           confirmPassword: 'Confirm Password',
           birthday: 'Birthday'
@@ -328,7 +312,6 @@ const AccountCreationScreen = ({ navigation }) => {
       if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
       if (!formData.email.trim()) newErrors.email = 'Email is required';
       if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required';
-      if (!formData.username.trim()) newErrors.username = 'Username is required';
       if (!formData.password.trim()) newErrors.password = 'Password is required';
       if (!formData.confirmPassword.trim()) newErrors.confirmPassword = 'Confirm password is required';
       if (!formData.birthday.trim()) newErrors.birthday = 'Birthday is required';
@@ -342,7 +325,6 @@ const AccountCreationScreen = ({ navigation }) => {
             lastName: 'Last Name',
             email: 'Email',
             phoneNumber: 'Phone Number',
-            username: 'Username',
             password: 'Password',
             confirmPassword: 'Confirm Password',
             birthday: 'Birthday',
@@ -363,13 +345,11 @@ const AccountCreationScreen = ({ navigation }) => {
       // Check for duplicates
       const emailExists = await checkForDuplicates('email', formData.email);
       const phoneExists = await checkForDuplicates('phoneNumber', formData.phoneNumber);
-      const usernameExists = await checkForDuplicates('username', formData.username);
 
-      if (emailExists || phoneExists || usernameExists) {
+      if (emailExists || phoneExists) {
         const duplicateFields = [];
         if (emailExists) duplicateFields.push('Email');
         if (phoneExists) duplicateFields.push('Phone Number');
-        if (usernameExists) duplicateFields.push('Username');
         
         Alert.alert(
           'Account Already Exists',
@@ -386,7 +366,6 @@ const AccountCreationScreen = ({ navigation }) => {
         phoneNumber: `${selectedCountry.code}${formData.phoneNumber}`,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        username: formData.username,
         password: formData.password, // In real app, hash this
         birthday: formData.birthday,
         gender: formData.gender,
@@ -397,12 +376,12 @@ const AccountCreationScreen = ({ navigation }) => {
       await createAccount(accountData);
       
       // Automatically log the user in after account creation
-      await login(formData.username, formData.password, true); // true for rememberMe
+      await login(formData.email, formData.password, true); // true for rememberMe
       
       // Show "Remember Me" popup
       Alert.alert(
         'Save Login Info?',
-        'Would you like to save your username and password to this device for faster login?',
+        'Would you like to save your email and password to this device for faster login?',
         [
           {
             text: 'Not Now',
@@ -500,19 +479,25 @@ const AccountCreationScreen = ({ navigation }) => {
     const year = date.getFullYear();
     const formattedDate = `${month}/${day}/${year}`;
     
-    setFormData(prev => ({ ...prev, birthday: formattedDate }));
     setSelectedDate(date);
     setShowDatePicker(false);
+    
+    // Update form data and trigger validation for birthday
+    updateFormData('birthday', formattedDate);
   };
 
   const handleGenderSelect = (gender) => {
-    setFormData(prev => ({ ...prev, gender }));
     setShowGenderPicker(false);
+    
+    // Update form data and trigger validation for gender
+    updateFormData('gender', gender);
   };
 
   const handleSexualitySelect = (sexuality) => {
-    setFormData(prev => ({ ...prev, sexuality }));
     setShowSexualityPicker(false);
+    
+    // Update form data and trigger validation for sexuality
+    updateFormData('sexuality', sexuality);
   };
 
   return (
@@ -535,7 +520,6 @@ const AccountCreationScreen = ({ navigation }) => {
               onTouchStart={() => {
                 setEmailFocused(false);
                 setPhoneFocused(false);
-                setUsernameFocused(false);
                 setPasswordFocused(false);
                 setConfirmPasswordFocused(false);
                 setFirstNameFocused(false);
@@ -562,7 +546,7 @@ const AccountCreationScreen = ({ navigation }) => {
                   <Ionicons name="wine" size={24} color="#8B0000" />
                 </View>
                 <Text style={styles.tagline}>
-                  Create your account
+                  Create Your Account
                 </Text>
               </View>
 
@@ -573,14 +557,13 @@ const AccountCreationScreen = ({ navigation }) => {
                   style={styles.containerGradient}
                 >
                   <Text style={styles.containerTitle}>
-                    Join the community
+                    Join the Community
                   </Text>
 
                   {/* Form */}
                   <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
                     {/* Personal Information */}
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Personal Information</Text>
                       
                       <View style={styles.row}>
                          <View style={[styles.halfInput, { marginRight: 8 }]} onTouchStart={(e) => {
@@ -670,6 +653,131 @@ const AccountCreationScreen = ({ navigation }) => {
                          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                        </View>
 
+                      {/* Password */}
+                      <View style={styles.inputGroup} onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setPasswordFocused(true);
+                      }}>
+                       <Text style={styles.label}>Password</Text>
+                       <View style={[
+                         styles.passwordInputWrapper,
+                         passwordFocused && styles.inputWrapperFocused
+                       ]}>
+                           <TextInput
+                             value={formData.password}
+                             onChangeText={(value) => updateFormData('password', value)}
+                             placeholder="Create a password"
+                             placeholderTextColor="#E6C547"
+                             style={[styles.inputField, styles.passwordInput]}
+                             secureTextEntry={!showPassword}
+                             onFocus={() => setPasswordFocused(true)}
+                             onBlur={() => setPasswordFocused(false)}
+                             autoComplete="off"
+                             textContentType="none"
+                             autoCorrect={false}
+                             autoCapitalize="none"
+                             spellCheck={false}
+                             selectionColor="#E6C547"
+                             underlineColorAndroid="transparent"
+                             keyboardType="default"
+                             importantForAutofill="no"
+                             passwordRules=""
+                           />
+                         <TouchableOpacity
+                           style={styles.eyeButton}
+                           onPress={() => setShowPassword(!showPassword)}
+                         >
+                           <Ionicons 
+                             name={showPassword ? "eye-off" : "eye"} 
+                             size={20} 
+                             color="#E6C547" 
+                           />
+                         </TouchableOpacity>
+                         {getValidationIcon('password') && (
+                           <Ionicons
+                             name={getValidationIcon('password')}
+                             size={20}
+                             color={getValidationColor('password')}
+                             style={styles.validationIcon}
+                           />
+                         )}
+                        </View>
+                        {validationMessages.password && (
+                          <Text style={[
+                            styles.validationMessage,
+                            validationStatus.password === 'valid' && styles.validationMessageValid,
+                            validationStatus.password === 'invalid' && styles.validationMessageInvalid
+                          ]}>
+                            {validationMessages.password}
+                          </Text>
+                        )}
+                        <Text style={styles.passwordRequirements}>
+                          Password must have: 8+ characters, 1 uppercase, 1 number, 1 special character
+                        </Text>
+                        {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                      </View>
+
+                      {/* Confirm Password */}
+                      <View style={styles.inputGroup} onTouchStart={(e) => {
+                        e.stopPropagation();
+                        setConfirmPasswordFocused(true);
+                      }}>
+                       <Text style={styles.label}>Confirm Password</Text>
+                       <View style={[
+                         styles.passwordInputWrapper,
+                         confirmPasswordFocused && styles.inputWrapperFocused
+                       ]}>
+                           <TextInput
+                             value={formData.confirmPassword}
+                             onChangeText={(value) => updateFormData('confirmPassword', value)}
+                             placeholder="Confirm your password"
+                             placeholderTextColor="#E6C547"
+                             style={[styles.inputField, styles.passwordInput]}
+                             secureTextEntry={!showConfirmPassword}
+                             onFocus={() => setConfirmPasswordFocused(true)}
+                             onBlur={() => setConfirmPasswordFocused(false)}
+                             autoComplete="off"
+                             textContentType="none"
+                             autoCorrect={false}
+                             autoCapitalize="none"
+                             spellCheck={false}
+                             selectionColor="#E6C547"
+                             underlineColorAndroid="transparent"
+                             keyboardType="default"
+                             importantForAutofill="no"
+                             passwordRules=""
+                           />
+                         <TouchableOpacity
+                           style={styles.eyeButton}
+                           onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                         >
+                           <Ionicons 
+                             name={showConfirmPassword ? "eye-off" : "eye"} 
+                             size={20} 
+                             color="#E6C547" 
+                           />
+                         </TouchableOpacity>
+                         {getValidationIcon('confirmPassword') && (
+                           <Ionicons
+                             name={getValidationIcon('confirmPassword')}
+                             size={20}
+                             color={getValidationColor('confirmPassword')}
+                             style={styles.validationIcon}
+                           />
+                         )}
+                        </View>
+                        {validationMessages.confirmPassword && (
+                          <Text style={[
+                            styles.validationMessage,
+                            validationStatus.confirmPassword === 'valid' && styles.validationMessageValid,
+                            validationStatus.confirmPassword === 'invalid' && styles.validationMessageInvalid
+                          ]}>
+                            {validationMessages.confirmPassword}
+                          </Text>
+                        )}
+                        {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+                      </View>
+
                       {/* Phone Number */}
                       <View style={styles.inputGroup} onTouchStart={(e) => {
                         e.stopPropagation();
@@ -737,7 +845,7 @@ const AccountCreationScreen = ({ navigation }) => {
                              onChangeText={(value) => updateFormData('birthday', formatBirthday(value))}
                              placeholder="MM/DD/YYYY"
                              placeholderTextColor="#E6C547"
-                             style={styles.inputField}
+                             style={[styles.inputField, styles.birthdayInputField]}
                              keyboardType="numeric"
                              onFocus={() => setBirthdayFocused(true)}
                              onBlur={() => setBirthdayFocused(false)}
@@ -748,6 +856,7 @@ const AccountCreationScreen = ({ navigation }) => {
                                setBirthdayFocused(true);
                                setShowDatePicker(true);
                              }}
+                             activeOpacity={0.7}
                            >
                              <Ionicons name="calendar" size={20} color="#E6C547" />
                            </TouchableOpacity>
@@ -800,177 +909,6 @@ const AccountCreationScreen = ({ navigation }) => {
                        </View>
                     </View>
 
-                     {/* Account Information Section */}
-                     <View style={styles.section}>
-                       <Text style={styles.sectionTitle}>Account Information</Text>
-                       
-                       {/* Username */}
-                       <View style={styles.inputGroup} onTouchStart={(e) => {
-                         e.stopPropagation();
-                         setUsernameFocused(true);
-                       }}>
-                         <Text style={styles.label}>Username</Text>
-                         <View style={[
-                           styles.inputWrapper,
-                           usernameFocused && styles.inputWrapperFocused
-                         ]}>
-                           <TextInput
-                             value={formData.username}
-                             onChangeText={(value) => updateFormData('username', value)}
-                             placeholder="Choose a username"
-                             placeholderTextColor="#E6C547"
-                             style={styles.inputField}
-                             autoCapitalize="none"
-                             autoComplete="off"
-                             textContentType="none"
-                             autoCorrect={false}
-                             onFocus={() => setUsernameFocused(true)}
-                             onBlur={() => setUsernameFocused(false)}
-                           />
-                           {getValidationIcon('username') && (
-                             <Ionicons
-                               name={getValidationIcon('username')}
-                               size={20}
-                               color={getValidationColor('username')}
-                               style={styles.validationIcon}
-                             />
-                           )}
-                         </View>
-                         {validationMessages.username && (
-                           <Text style={[
-                             styles.validationMessage,
-                             validationStatus.username === 'valid' && styles.validationMessageValid,
-                             validationStatus.username === 'invalid' && styles.validationMessageInvalid
-                           ]}>
-                             {validationMessages.username}
-                           </Text>
-                         )}
-                         {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
-                       </View>
-                       
-                       <View style={styles.inputGroup} onTouchStart={(e) => {
-                         e.stopPropagation();
-                         setPasswordFocused(true);
-                       }}>
-                        <Text style={styles.label}>Password</Text>
-                        <View style={[
-                          styles.passwordInputWrapper,
-                          passwordFocused && styles.inputWrapperFocused
-                        ]}>
-                            <TextInput
-                              value={formData.password}
-                              onChangeText={(value) => updateFormData('password', value)}
-                              placeholder="Create a password"
-                              placeholderTextColor="#E6C547"
-                              style={[styles.inputField, styles.passwordInput]}
-                              secureTextEntry={!showPassword}
-                              onFocus={() => setPasswordFocused(true)}
-                              onBlur={() => setPasswordFocused(false)}
-                              autoComplete="off"
-                              textContentType="none"
-                              autoCorrect={false}
-                              autoCapitalize="none"
-                              spellCheck={false}
-                              selectionColor="#E6C547"
-                              underlineColorAndroid="transparent"
-                              keyboardType="default"
-                              importantForAutofill="no"
-                              passwordRules=""
-                            />
-                          <TouchableOpacity
-                            style={styles.eyeButton}
-                            onPress={() => setShowPassword(!showPassword)}
-                          >
-                            <Ionicons 
-                              name={showPassword ? "eye-off" : "eye"} 
-                              size={20} 
-                              color="#E6C547" 
-                            />
-                          </TouchableOpacity>
-                          {getValidationIcon('password') && (
-                            <Ionicons
-                              name={getValidationIcon('password')}
-                              size={20}
-                              color={getValidationColor('password')}
-                              style={styles.validationIcon}
-                            />
-                          )}
-                         </View>
-                         {validationMessages.password && (
-                           <Text style={[
-                             styles.validationMessage,
-                             validationStatus.password === 'valid' && styles.validationMessageValid,
-                             validationStatus.password === 'invalid' && styles.validationMessageInvalid
-                           ]}>
-                             {validationMessages.password}
-                           </Text>
-                         )}
-                         <Text style={styles.passwordRequirements}>
-                           Password must have: 8+ characters, 1 uppercase, 1 number, 1 special character
-                         </Text>
-                         {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-                       </View>
-
-                      <View style={styles.inputGroup} onTouchStart={(e) => {
-                        e.stopPropagation();
-                        setConfirmPasswordFocused(true);
-                      }}>
-                        <Text style={styles.label}>Confirm Password</Text>
-                        <View style={[
-                          styles.passwordInputWrapper,
-                          confirmPasswordFocused && styles.inputWrapperFocused
-                        ]}>
-                            <TextInput
-                              value={formData.confirmPassword}
-                              onChangeText={(value) => updateFormData('confirmPassword', value)}
-                              placeholder="Confirm your password"
-                              placeholderTextColor="#E6C547"
-                              style={[styles.inputField, styles.passwordInput]}
-                              secureTextEntry={!showConfirmPassword}
-                              onFocus={() => setConfirmPasswordFocused(true)}
-                              onBlur={() => setConfirmPasswordFocused(false)}
-                              autoComplete="off"
-                              textContentType="none"
-                              autoCorrect={false}
-                              autoCapitalize="none"
-                              spellCheck={false}
-                              selectionColor="#E6C547"
-                              underlineColorAndroid="transparent"
-                              keyboardType="default"
-                              importantForAutofill="no"
-                              passwordRules=""
-                            />
-                          <TouchableOpacity
-                            style={styles.eyeButton}
-                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                          >
-                            <Ionicons 
-                              name={showConfirmPassword ? "eye-off" : "eye"} 
-                              size={20} 
-                              color="#E6C547" 
-                            />
-                          </TouchableOpacity>
-                          {getValidationIcon('confirmPassword') && (
-                            <Ionicons
-                              name={getValidationIcon('confirmPassword')}
-                              size={20}
-                              color={getValidationColor('confirmPassword')}
-                              style={styles.validationIcon}
-                            />
-                          )}
-                         </View>
-                         {validationMessages.confirmPassword && (
-                           <Text style={[
-                             styles.validationMessage,
-                             validationStatus.confirmPassword === 'valid' && styles.validationMessageValid,
-                             validationStatus.confirmPassword === 'invalid' && styles.validationMessageInvalid
-                           ]}>
-                             {validationMessages.confirmPassword}
-                           </Text>
-                         )}
-                         {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-                       </View>
-                    </View>
 
                     {/* Create Account Button */}
                     <TouchableOpacity
@@ -1273,18 +1211,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 40,
   },
   header: {
     alignItems: 'center',
     marginBottom: 48,
+    marginTop: 60,
     width: '100%',
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 0,
-    top: -40,
+    top: -60,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
@@ -1556,10 +1494,19 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'bold',
   },
+  birthdayInputField: {
+    paddingRight: 50, // Leave space for calendar button
+  },
   calendarButton: {
     position: 'absolute',
-    right: 12,
-    top: 14,
+    right: 8,
+    top: 8,
+    bottom: 8,
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(230, 197, 71, 0.1)',
+    borderRadius: 8,
   },
   // Modal styles
   modalOverlay: {

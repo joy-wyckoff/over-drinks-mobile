@@ -111,13 +111,13 @@ export const AuthProvider = ({ children }) => {
       const accountsData = await AsyncStorage.getItem('userAccounts');
       const accounts = accountsData ? JSON.parse(accountsData) : [];
       
-      // Find user by username
+      // Find user by email
       const userAccount = accounts.find(account => 
-        account.username.toLowerCase() === username.toLowerCase()
+        account.email && account.email.toLowerCase() === username.toLowerCase()
       );
       
       if (!userAccount) {
-        throw new Error('Username not found');
+        throw new Error('Email not found');
       }
       
       if (userAccount.password !== password) {
@@ -182,13 +182,13 @@ export const AuthProvider = ({ children }) => {
       const accountsData = await AsyncStorage.getItem('userAccounts');
       const accounts = accountsData ? JSON.parse(accountsData) : [];
       
-      // Check if username already exists
+      // Check if email already exists
       const existingUser = accounts.find(account => 
-        account.username.toLowerCase() === accountData.username.toLowerCase()
+        account.email && account.email.toLowerCase() === accountData.email.toLowerCase()
       );
       
       if (existingUser) {
-        throw new Error('Username already taken');
+        throw new Error('Email already taken');
       }
       
       // Add new account
@@ -203,8 +203,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Mark profile as completed
-  const markProfileCompleted = () => {
+  const markProfileCompleted = (profileData = null) => {
     setNeedsProfileCompletion(false);
+    
+    // Update user object with new profile data if provided
+    if (profileData && user) {
+      const updatedUser = {
+        ...user,
+        profile: profileData
+      };
+      setUser(updatedUser);
+    }
   };
 
   const logout = async () => {

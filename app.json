@@ -43,7 +43,9 @@
       "expo-location",
       "expo-image-picker",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-audio"
     ]
   }
 }

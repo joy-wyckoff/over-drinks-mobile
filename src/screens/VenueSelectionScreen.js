@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,13 @@ const VenueSelectionScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { venues } = route.params;
+
+  // Disable swipe-back gesture
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: false,
+    });
+  }, [navigation]);
 
   const handleVenueSelect = (venue) => {
     navigation.navigate('CheckIn', { venueId: venue.id });
@@ -102,15 +109,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E6C547',
+    marginBottom: 48,
+    marginTop: 60,
+    width: '100%',
+    position: 'relative',
   },
   backButton: {
+    position: 'absolute',
+    left: 0,
+    top: -40,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,

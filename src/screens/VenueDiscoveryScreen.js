@@ -1052,7 +1052,7 @@ const VenueDiscoveryScreen = () => {
           <Text style={styles.pageTitle}>Find Your Scene</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity
-              style={styles.debugButton}
+              style={styles.refreshLocationButton}
               onPress={async () => {
                 try {
                   console.log('=== DEBUG BUTTON CLICKED ===');
@@ -1110,6 +1110,7 @@ const VenueDiscoveryScreen = () => {
               activeOpacity={0.8}
             >
               <Ionicons name="refresh" size={16} color="#E6C547" />
+              <Text style={styles.refreshButtonText}>Refresh Location</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -1147,7 +1148,7 @@ const VenueDiscoveryScreen = () => {
               style={styles.dropdownItem}
               onPress={() => {
                 setShowSettingsDropdown(false);
-                navigation.navigate('ProfileCreation');
+                navigation.navigate('ProfileEdit');
               }}
               activeOpacity={0.7}
             >
@@ -1206,9 +1207,9 @@ const VenueDiscoveryScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            {/* Search Bar with Dropdowns */}
+            {/* Integrated Search Bar with Filters and Sort */}
             <View style={styles.searchSection}>
-              <View style={styles.searchContainer}>
+              <View style={styles.integratedSearchContainer}>
                 <Ionicons name="search" size={20} color="#E6C547" style={styles.searchIcon} />
                 <TextInput
                   style={styles.searchInput}
@@ -1217,152 +1218,156 @@ const VenueDiscoveryScreen = () => {
                   value={searchTerm}
                   onChangeText={setSearchTerm}
                 />
+                
+                {/* Filter Button */}
+                <TouchableOpacity
+                  style={styles.integratedDropdownButton}
+                  onPress={() => {
+                    setShowFilterDropdown(!showFilterDropdown);
+                    if (!showFilterDropdown) {
+                      setShowSortDropdown(false); // Close sort dropdown when opening filter
+                    }
+                  }}
+                >
+                  <Ionicons name="filter" size={16} color="#E6C547" />
+                </TouchableOpacity>
+                
+                {/* Sort Button */}
+                <TouchableOpacity
+                  style={styles.integratedDropdownButton}
+                  onPress={() => {
+                    setShowSortDropdown(!showSortDropdown);
+                    if (!showSortDropdown) {
+                      setShowFilterDropdown(false); // Close filter dropdown when opening sort
+                    }
+                  }}
+                >
+                  <Ionicons name="swap-vertical" size={16} color="#E6C547" />
+                </TouchableOpacity>
               </View>
               
               {/* Filter Dropdown */}
-              <View style={styles.dropdownContainer}>
-                <TouchableOpacity
-                  style={styles.dropdownButton}
-                  onPress={() => setShowFilterDropdown(!showFilterDropdown)}
+              {showFilterDropdown && (
+                <View 
+                  style={styles.filterDropdown}
+                  onTouchStart={(e) => e.stopPropagation()}
                 >
-                  <Ionicons name="filter" size={16} color="#E6C547" />
-                  <Text style={styles.dropdownButtonText}>Filters</Text>
-                  <Ionicons name="chevron-down" size={16} color="#E6C547" />
-                </TouchableOpacity>
-                
-                {showFilterDropdown && (
-                  <View 
-                    style={styles.filterDropdown}
+                  <ScrollView 
+                    style={styles.dropdownScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
                     onTouchStart={(e) => e.stopPropagation()}
                   >
-                    <ScrollView 
-                      style={styles.dropdownScrollView}
-                      showsVerticalScrollIndicator={true}
-                      nestedScrollEnabled={true}
-                      onTouchStart={(e) => e.stopPropagation()}
-                    >
-                      <View style={styles.filterDropdownSection}>
-                        <Text style={styles.filterDropdownTitle}>Venue Type</Text>
-                        {venueTypeFilters.map((filter) => (
-                          <TouchableOpacity
-                            key={filter.value}
-                            style={[
-                              styles.filterDropdownItem,
-                              activeVenueTypeFilter === filter.value && styles.filterDropdownItemActive
-                            ]}
-                            onPress={() => {
-                              setActiveVenueTypeFilter(activeVenueTypeFilter === filter.value ? null : filter.value);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[
-                              styles.filterDropdownItemText,
-                              activeVenueTypeFilter === filter.value && styles.filterDropdownItemTextActive
-                            ]}>
-                              {filter.label}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                      
-                      <View style={styles.filterDropdownSection}>
-                        <Text style={styles.filterDropdownTitle}>Music</Text>
-                        {musicTypeFilters.map((filter) => (
-                          <TouchableOpacity
-                            key={filter.value}
-                            style={[
-                              styles.filterDropdownItem,
-                              activeMusicFilter === filter.value && styles.filterDropdownItemActive
-                            ]}
-                            onPress={() => {
-                              setActiveMusicFilter(activeMusicFilter === filter.value ? null : filter.value);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[
-                              styles.filterDropdownItemText,
-                              activeMusicFilter === filter.value && styles.filterDropdownItemTextActive
-                            ]}>
-                              {filter.label}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                      
-                      <View style={styles.filterDropdownSection}>
-                        <Text style={styles.filterDropdownTitle}>Vibe</Text>
-                        {vibeFilters.map((filter) => (
-                          <TouchableOpacity
-                            key={filter.value}
-                            style={[
-                              styles.filterDropdownItem,
-                              activeVibeFilter === filter.value && styles.filterDropdownItemActive
-                            ]}
-                            onPress={() => {
-                              setActiveVibeFilter(activeVibeFilter === filter.value ? null : filter.value);
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[
-                              styles.filterDropdownItemText,
-                              activeVibeFilter === filter.value && styles.filterDropdownItemTextActive
-                            ]}>
-                              {filter.label}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-              
-              {/* Sort Dropdown */}
-              <View style={styles.dropdownContainer}>
-                <TouchableOpacity
-                  style={styles.dropdownButton}
-                  onPress={() => setShowSortDropdown(!showSortDropdown)}
-                >
-                  <Ionicons name="swap-vertical" size={16} color="#E6C547" />
-                  <Text style={styles.dropdownButtonText}>Sort</Text>
-                  <Ionicons name="chevron-down" size={16} color="#E6C547" />
-                </TouchableOpacity>
-                
-                {showSortDropdown && (
-                  <View 
-                    style={styles.sortDropdown}
-                    onTouchStart={(e) => e.stopPropagation()}
-                  >
-                    <ScrollView 
-                      style={styles.dropdownScrollView}
-                      showsVerticalScrollIndicator={true}
-                      nestedScrollEnabled={true}
-                      onTouchStart={(e) => e.stopPropagation()}
-                    >
-                      {sortOptions.map((option) => (
+                    <View style={styles.filterDropdownSection}>
+                      <Text style={styles.filterDropdownTitle}>Venue Type</Text>
+                      {venueTypeFilters.map((filter) => (
                         <TouchableOpacity
-                          key={option.value}
+                          key={filter.value}
                           style={[
-                            styles.sortDropdownItem,
-                            sortBy === option.value && styles.sortDropdownItemActive
+                            styles.filterDropdownItem,
+                            activeVenueTypeFilter === filter.value && styles.filterDropdownItemActive
                           ]}
                           onPress={() => {
-                            setSortBy(option.value);
+                            setActiveVenueTypeFilter(activeVenueTypeFilter === filter.value ? null : filter.value);
                           }}
                           activeOpacity={0.7}
                         >
                           <Text style={[
-                            styles.sortDropdownItemText,
-                            sortBy === option.value && styles.sortDropdownItemTextActive
+                            styles.filterDropdownItemText,
+                            activeVenueTypeFilter === filter.value && styles.filterDropdownItemTextActive
                           ]}>
-                            {option.label}
+                            {filter.label}
                           </Text>
                         </TouchableOpacity>
                       ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
+                    </View>
+                    
+                    <View style={styles.filterDropdownSection}>
+                      <Text style={styles.filterDropdownTitle}>Music</Text>
+                      {musicTypeFilters.map((filter) => (
+                        <TouchableOpacity
+                          key={filter.value}
+                          style={[
+                            styles.filterDropdownItem,
+                            activeMusicFilter === filter.value && styles.filterDropdownItemActive
+                          ]}
+                          onPress={() => {
+                            setActiveMusicFilter(activeMusicFilter === filter.value ? null : filter.value);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[
+                            styles.filterDropdownItemText,
+                            activeMusicFilter === filter.value && styles.filterDropdownItemTextActive
+                          ]}>
+                            {filter.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    
+                    <View style={styles.filterDropdownSection}>
+                      <Text style={styles.filterDropdownTitle}>Vibe</Text>
+                      {vibeFilters.map((filter) => (
+                        <TouchableOpacity
+                          key={filter.value}
+                          style={[
+                            styles.filterDropdownItem,
+                            activeVibeFilter === filter.value && styles.filterDropdownItemActive
+                          ]}
+                          onPress={() => {
+                            setActiveVibeFilter(activeVibeFilter === filter.value ? null : filter.value);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[
+                            styles.filterDropdownItemText,
+                            activeVibeFilter === filter.value && styles.filterDropdownItemTextActive
+                          ]}>
+                            {filter.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+              
+              {/* Sort Dropdown */}
+              {showSortDropdown && (
+                <View 
+                  style={styles.sortDropdown}
+                  onTouchStart={(e) => e.stopPropagation()}
+                >
+                  <ScrollView 
+                    style={styles.dropdownScrollView}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  >
+                    {sortOptions.map((option) => (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.sortDropdownItem,
+                          sortBy === option.value && styles.sortDropdownItemActive
+                        ]}
+                        onPress={() => {
+                          setSortBy(option.value);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.sortDropdownItemText,
+                          sortBy === option.value && styles.sortDropdownItemTextActive
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
             </View>
 
 
@@ -1603,10 +1608,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   searchSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 20,
-    gap: 12,
   },
   searchContainer: {
     flex: 1,
@@ -1618,6 +1620,30 @@ const styles = StyleSheet.create({
     borderColor: '#E6C547',
     paddingHorizontal: 12,
     height: 48,
+  },
+  integratedSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  integratedDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    marginLeft: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(230, 197, 71, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(230, 197, 71, 0.3)',
+    minWidth: 36,
+    height: 32,
   },
   searchInput: {
     flex: 1,
@@ -1769,6 +1795,24 @@ const styles = StyleSheet.create({
     color: '#F5F5DC',
     textAlign: 'center',
     marginTop: 16,
+  },
+  refreshLocationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E6C547',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    gap: 6,
+  },
+  refreshButtonText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    color: '#E6C547',
+    fontWeight: '600',
   },
 });
 

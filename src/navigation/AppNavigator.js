@@ -13,6 +13,9 @@ import VenueDiscoveryScreen from '../screens/VenueDiscoveryScreen';
 import CheckInScreen from '../screens/CheckInScreen';
 import ProfileBrowsingScreen from '../screens/ProfileBrowsingScreen';
 import VenueSelectionScreen from '../screens/VenueSelectionScreen';
+import RejectedProfilesScreen from '../screens/RejectedProfilesScreen';
+import LikedProfilesScreen from '../screens/LikedProfilesScreen';
+import ProfileEditScreen from '../screens/ProfileEditScreen';
 
 const Stack = createStackNavigator();
 
@@ -50,6 +53,9 @@ const AppNavigator = () => {
           <Stack.Screen name="CheckIn" component={CheckInScreen} />
           <Stack.Screen name="ProfileBrowsing" component={ProfileBrowsingScreen} />
           <Stack.Screen name="VenueSelection" component={VenueSelectionScreen} />
+          <Stack.Screen name="RejectedProfiles" component={RejectedProfilesScreen} />
+          <Stack.Screen name="LikedProfiles" component={LikedProfilesScreen} />
+          <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
         </>
       )}
     </Stack.Navigator>

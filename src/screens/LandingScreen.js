@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-audio';
+import * as Haptics from 'expo-haptics';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useTheme } from '../contexts/ThemeContext';
@@ -25,10 +27,54 @@ const LandingScreen = () => {
   const navigation = useNavigation();
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showCursor, setShowCursor] = useState(true);
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const [sound, setSound] = useState(null);
+  const [isButtonPressed, setIsButtonPressed] = useState(false);
   
   const fullText = "Where connections happen over cocktails...";
   const typingSpeed = 100; // milliseconds per character
+
+  // Load typing sound
+  useEffect(() => {
+    const loadSound = async () => {
+      try {
+        const typingSound = await Audio.createAsync(
+          { uri: 'https://www.soundjay.com/misc/sounds/typewriter-key-1.wav' },
+          { shouldPlay: false, isLooping: false }
+        );
+        setSound(typingSound);
+      } catch (error) {
+        console.log('Could not load typing sound:', error);
+      }
+    };
+    loadSound();
+
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, []);
+
+  // Play typing sound
+  const playTypingSound = async () => {
+    try {
+      if (sound) {
+        await sound.replayAsync();
+      }
+    } catch (error) {
+      console.log('Could not play typing sound:', error);
+    }
+  };
+
+  // Play haptic feedback
+  const playHapticFeedback = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.log('Could not play haptic feedback:', error);
+    }
+  };
 
   // Restart animation when screen comes into focus
   useFocusEffect(
@@ -36,40 +82,56 @@ const LandingScreen = () => {
       // Reset animation state
       setDisplayedText('');
       setCurrentIndex(0);
-      setShowCursor(true);
+      setIsTypingComplete(false);
       
       let timeoutId;
-      let cursorIntervalId;
       let currentCharIndex = 0;
       
       // Typewriter effect
       const typeNextChar = () => {
         if (currentCharIndex < fullText.length) {
           setDisplayedText(fullText.substring(0, currentCharIndex + 1));
+          setCurrentIndex(currentCharIndex + 1);
           currentCharIndex++;
+          
+          // Play sound and haptic feedback for each character
+          playTypingSound();
+          playHapticFeedback();
+          
           timeoutId = setTimeout(typeNextChar, typingSpeed);
+        } else {
+          // Typing is complete
+          setIsTypingComplete(true);
         }
       };
       
       // Start typing animation
       timeoutId = setTimeout(typeNextChar, typingSpeed);
       
-      // Blinking cursor effect
-      cursorIntervalId = setInterval(() => {
-        setShowCursor(prev => !prev);
-      }, 500);
-      
       // Cleanup function
       return () => {
         if (timeoutId) clearTimeout(timeoutId);
-        if (cursorIntervalId) clearInterval(cursorIntervalId);
       };
     }, [])
   );
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     console.log('Button pressed!');
+    // Add haptic feedback for button press
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (error) {
+      console.log('Could not play haptic feedback:', error);
+    }
     navigation.navigate('Login');
+  };
+
+  const handleButtonPressIn = () => {
+    setIsButtonPressed(true);
+  };
+
+  const handleButtonPressOut = () => {
+    setIsButtonPressed(false);
   };
 
   return (
@@ -96,7 +158,7 @@ const LandingScreen = () => {
                 <View style={styles.taglineWrapper}>
                   <Text style={[styles.tagline, { color: '#ffffff' }]}>
                     {displayedText}
-                    {currentIndex < fullText.length && showCursor && <Text style={styles.cursor}>|</Text>}
+                    {!isTypingComplete && <Text style={styles.cursor}>|</Text>}
                   </Text>
                 </View>
               </View>
@@ -105,10 +167,19 @@ const LandingScreen = () => {
               <View style={styles.loginContainer}>
                 <TouchableOpacity
                   onPress={handleLogin}
-                  style={[styles.loginButton, styles.testButton]}
-                  activeOpacity={0.8}
+                  onPressIn={handleButtonPressIn}
+                  onPressOut={handleButtonPressOut}
+                  style={[
+                    styles.loginButton, 
+                    styles.testButton,
+                    isButtonPressed && styles.buttonPressed
+                  ]}
+                  activeOpacity={0.9}
                 >
-                  <Text style={styles.buttonText}>Find Your Crowd</Text>
+                  <Text style={[
+                    styles.buttonText,
+                    isButtonPressed && styles.buttonTextPressed
+                  ]}>Find Your Crowd</Text>
                 </TouchableOpacity>
               </View>
 
@@ -186,13 +257,16 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   cursor: {
-    color: '#ffffff',
-    fontWeight: '600',
-    opacity: 0.8,
+    color: '#D4AF37',
+    fontWeight: 'bold',
+    opacity: 1,
     fontFamily: 'Times New Roman',
     fontSize: 18,
     letterSpacing: 0.2,
     fontStyle: 'italic',
+    textShadowColor: 'rgba(0,0,0,0.9)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   loginContainer: {
     width: '100%',
@@ -220,22 +294,58 @@ const styles = StyleSheet.create({
   },
   testButton: {
     backgroundColor: '#D4AF37',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    // 3D gradient effect
+    borderWidth: 2,
+    borderColor: '#F4E4BC',
+    // Inner shadow effect
+    borderTopWidth: 3,
+    borderTopColor: '#F7E8C1',
+    borderLeftWidth: 2,
+    borderLeftColor: '#F7E8C1',
+    borderRightWidth: 1,
+    borderRightColor: '#B8941F',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B8941F',
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     fontFamily: 'Georgia',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 3,
+    letterSpacing: 0.5,
+  },
+  buttonPressed: {
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    // Inverted 3D effect when pressed
+    borderTopWidth: 1,
+    borderTopColor: '#B8941F',
+    borderLeftWidth: 1,
+    borderLeftColor: '#B8941F',
+    borderRightWidth: 2,
+    borderRightColor: '#F7E8C1',
+    borderBottomWidth: 2,
+    borderBottomColor: '#F7E8C1',
+    transform: [{ scale: 0.98 }],
+  },
+  buttonTextPressed: {
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   features: {
     width: '100%',

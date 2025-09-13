@@ -23,12 +23,12 @@ const { width, height } = Dimensions.get('window');
 const LoginScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { login } = useAuth();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [containerHovered, setContainerHovered] = useState(false);
   const [containerTouched, setContainerTouched] = useState(false);
-  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [createAccountPressed, setCreateAccountPressed] = useState(false);
   const [enterButtonHovered, setEnterButtonHovered] = useState(false);
@@ -37,16 +37,16 @@ const LoginScreen = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both username and password');
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both email and password');
       return;
     }
 
     setLoading(true);
     try {
-      await login(username, password, false);
+      await login(email, password, false);
     } catch (error) {
-      Alert.alert('Login Failed', error.message || 'Invalid username or password');
+      Alert.alert('Login Failed', error.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -120,29 +120,29 @@ const LoginScreen = ({ navigation }) => {
                 style={styles.containerGradient}
               >
                 <Text style={styles.containerTitle}>
-                  Sign in to discover tonight's connections
+                  Sign In To Discover Tonight's Connections
                 </Text>
 
-                {/* Username Input */}
+                {/* Email Input */}
                 <View style={styles.inputGroup} onTouchStart={(e) => {
                   e.stopPropagation();
-                  setUsernameFocused(true);
+                  setEmailFocused(true);
                 }}>
-                  <Text style={styles.inputLabel}>Username</Text>
+                  <Text style={styles.inputLabel}>Email</Text>
                   <View style={[
                     styles.inputWrapper,
-                    usernameFocused && styles.inputWrapperFocused
+                    emailFocused && styles.inputWrapperFocused
                   ]}>
                     <TextInput
-                      value={username}
-                      onChangeText={setUsername}
-                      placeholder="Enter your username"
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="Enter your email"
                       placeholderTextColor="#E6C547"
                       style={styles.inputField}
                       autoCapitalize="none"
-                      keyboardType="default"
-                      onFocus={() => setUsernameFocused(true)}
-                      onBlur={() => setUsernameFocused(false)}
+                      keyboardType="email-address"
+                      onFocus={() => setEmailFocused(true)}
+                      onBlur={() => setEmailFocused(false)}
                     />
                   </View>
                 </View>
@@ -200,7 +200,7 @@ const LoginScreen = ({ navigation }) => {
                       colors={['#E6C547', '#D4AF37', '#B8860B']}
                     style={styles.enterButtonGradient}
                   >
-                    <Text style={styles.enterButtonText}>Enter</Text>
+                    <Text style={styles.enterButtonText}>Login</Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -286,13 +286,14 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 48,
+    marginTop: 40,
     width: '100%',
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 0,
-    top: -40,
+    top: -60,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
