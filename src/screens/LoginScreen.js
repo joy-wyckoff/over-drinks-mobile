@@ -267,21 +267,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    minHeight: '100%',
-    paddingBottom: 200, // Extra padding to prevent screen cut off when scrolling
   },
   backgroundGradient: {
-    flex: 1,
     minHeight: '100%',
   },
   safeArea: {
     flex: 1,
   },
   content: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    paddingBottom: 80,
   },
   header: {
     alignItems: 'center',

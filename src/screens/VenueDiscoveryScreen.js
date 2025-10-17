@@ -979,9 +979,6 @@ const VenueDiscoveryScreen = () => {
           venueLng
         );
         
-        // Debug logging for all venues
-        console.log(`Distance to ${venue.name}: ${distance.toFixed(4)} miles (${(distance * 5280).toFixed(0)} feet)`);
-        
         return distance <= 0.02; // Exactly 100 feet = ~0.02 miles
       });
       

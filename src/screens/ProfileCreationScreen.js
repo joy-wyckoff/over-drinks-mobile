@@ -23,8 +23,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Interests data
-const interests = [
+// Interests data organized by category
+const interestsByCategory = [
+  {
+    category: 'Going Out',
+    interests: [
   { value: 'jazz', label: '🎷 Jazz Music', emoji: '🎷' },
   { value: 'cocktails', label: '🍸 Cocktails', emoji: '🍸' },
   { value: 'dancing', label: '💃 Dancing', emoji: '💃' },
@@ -34,18 +37,265 @@ const interests = [
   { value: 'karaoke', label: '🎤 Karaoke', emoji: '🎤' },
   { value: 'clubbing', label: '🕺 Clubbing', emoji: '🕺' },
   { value: 'concerts', label: '🎸 Concerts', emoji: '🎸' },
-  { value: 'comedy', label: '😂 Comedy', emoji: '😂' },
-  { value: 'trivia', label: '🧠 Trivia', emoji: '🧠' },
-  { value: 'art', label: '🎨 Art', emoji: '🎨' },
-  { value: 'literature', label: '📚 Literature', emoji: '📚' },
-  { value: 'museums', label: '🏛️ Museums', emoji: '🏛️' },
-  { value: 'theater', label: '🎭 Theater', emoji: '🎭' },
-  { value: 'photography', label: '📷 Photography', emoji: '📷' },
-  { value: 'writing', label: '✍️ Writing', emoji: '✍️' },
-  { value: 'poetry', label: '📝 Poetry', emoji: '📝' },
-  { value: 'film', label: '🎬 Film & Movies', emoji: '🎬' },
-  { value: 'vintage', label: '⏰ Vintage', emoji: '⏰' },
+  { value: 'comedy', label: '😂 Comedy Shows', emoji: '😂' },
+  { value: 'trivia', label: '🧠 Trivia Nights', emoji: '🧠' },
+  { value: 'bars', label: '🍺 Bar Hopping', emoji: '🍺' },
+  { value: 'rooftop-bars', label: '🌆 Rooftop Bars', emoji: '🌆' },
+  { value: 'dive-bars', label: '🍻 Dive Bars', emoji: '🍻' },
+  { value: 'speakeasy', label: '🚪 Speakeasies', emoji: '🚪' },
+  { value: 'nightlife', label: '🌃 Nightlife', emoji: '🌃' },
+  { value: 'festivals', label: '🎪 Festivals', emoji: '🎪' },
+  { value: 'raves', label: '🎉 Raves', emoji: '🎉' },
+  { value: 'pool-bars', label: '🎱 Pool/Billiards', emoji: '🎱' },
+    ]
+  },
+  {
+    category: 'Arts & Culture',
+    interests: [
+      { value: 'art', label: '🎨 Art', emoji: '🎨' },
+      { value: 'museums', label: '🏛️ Museums', emoji: '🏛️' },
+      { value: 'theater', label: '🎭 Theater', emoji: '🎭' },
+      { value: 'photography', label: '📷 Photography', emoji: '📷' },
+      { value: 'writing', label: '✍️ Writing', emoji: '✍️' },
+      { value: 'poetry', label: '📝 Poetry', emoji: '📝' },
+      { value: 'vintage', label: '⏰ Vintage', emoji: '⏰' },
+      { value: 'painting', label: '🖼️ Painting', emoji: '🖼️' },
+      { value: 'drawing', label: '✏️ Drawing', emoji: '✏️' },
+      { value: 'sculpture', label: '🗿 Sculpture', emoji: '🗿' },
+      { value: 'galleries', label: '🖌️ Art Galleries', emoji: '🖌️' },
+      { value: 'crafts', label: '🧶 Crafts', emoji: '🧶' },
+      { value: 'pottery', label: '🏺 Pottery', emoji: '🏺' },
+      { value: 'jewelry-making', label: '💍 Jewelry Making', emoji: '💍' },
+    ]
+  },
+  {
+    category: 'Film & TV',
+    interests: [
+      { value: 'film', label: '🎬 Film & Movies', emoji: '🎬' },
+      { value: 'documentaries', label: '🎥 Documentaries', emoji: '🎥' },
+      { value: 'horror-movies', label: '👻 Horror Movies', emoji: '👻' },
+      { value: 'romantic-movies', label: '💕 Romantic Movies', emoji: '💕' },
+      { value: 'action-movies', label: '💥 Action Movies', emoji: '💥' },
+      { value: 'indie-films', label: '🎞️ Indie Films', emoji: '🎞️' },
+      { value: 'tv-series', label: '📺 TV Series', emoji: '📺' },
+      { value: 'anime', label: '⚡ Anime', emoji: '⚡' },
+      { value: 'film-making', label: '🎬 Film Making', emoji: '🎬' },
+    ]
+  },
+  {
+    category: 'Music',
+    interests: [
+      { value: 'rock', label: '🎸 Rock Music', emoji: '🎸' },
+      { value: 'pop', label: '🎤 Pop Music', emoji: '🎤' },
+      { value: 'hip-hop', label: '🎧 Hip Hop', emoji: '🎧' },
+      { value: 'electronic', label: '🎹 Electronic Music', emoji: '🎹' },
+      { value: 'classical', label: '🎻 Classical Music', emoji: '🎻' },
+      { value: 'country', label: '🤠 Country Music', emoji: '🤠' },
+      { value: 'r&b', label: '🎵 R&B', emoji: '🎵' },
+      { value: 'indie-music', label: '🎼 Indie Music', emoji: '🎼' },
+      { value: 'singing', label: '🎙️ Singing', emoji: '🎙️' },
+      { value: 'playing-instruments', label: '🎺 Playing Instruments', emoji: '🎺' },
+      { value: 'guitar', label: '🎸 Guitar', emoji: '🎸' },
+      { value: 'piano', label: '🎹 Piano', emoji: '🎹' },
+      { value: 'dj-ing', label: '🎧 DJing', emoji: '🎧' },
+      { value: 'music-production', label: '🎚️ Music Production', emoji: '🎚️' },
+    ]
+  },
+  {
+    category: 'Reading & Literature',
+    interests: [
+      { value: 'literature', label: '📚 Literature', emoji: '📚' },
+      { value: 'reading', label: '📖 Reading', emoji: '📖' },
+      { value: 'book-clubs', label: '📚 Book Clubs', emoji: '📚' },
+      { value: 'fiction', label: '📕 Fiction', emoji: '📕' },
+      { value: 'non-fiction', label: '📗 Non-Fiction', emoji: '📗' },
+      { value: 'sci-fi', label: '🚀 Sci-Fi', emoji: '🚀' },
+      { value: 'fantasy', label: '🐉 Fantasy', emoji: '🐉' },
+      { value: 'mystery', label: '🔍 Mystery', emoji: '🔍' },
+      { value: 'comics', label: '💬 Comics', emoji: '💬' },
+      { value: 'graphic-novels', label: '📘 Graphic Novels', emoji: '📘' },
+    ]
+  },
+  {
+    category: 'Food & Drink',
+    interests: [
+      { value: 'cooking', label: '👨‍🍳 Cooking', emoji: '👨‍🍳' },
+      { value: 'baking', label: '🧁 Baking', emoji: '🧁' },
+      { value: 'foodie', label: '🍽️ Foodie', emoji: '🍽️' },
+      { value: 'coffee', label: '☕ Coffee', emoji: '☕' },
+      { value: 'tea', label: '🍵 Tea', emoji: '🍵' },
+      { value: 'craft-beer', label: '🍺 Craft Beer', emoji: '🍺' },
+      { value: 'wine-tasting', label: '🍷 Wine Tasting', emoji: '🍷' },
+      { value: 'sushi', label: '🍣 Sushi', emoji: '🍣' },
+      { value: 'pizza', label: '🍕 Pizza', emoji: '🍕' },
+      { value: 'brunch', label: '🥞 Brunch', emoji: '🥞' },
+      { value: 'vegan', label: '🥗 Vegan Food', emoji: '🥗' },
+      { value: 'desserts', label: '🍰 Desserts', emoji: '🍰' },
+      { value: 'street-food', label: '🌮 Street Food', emoji: '🌮' },
+      { value: 'fine-dining', label: '🍽️ Fine Dining', emoji: '🍽️' },
+      { value: 'food-trucks', label: '🚚 Food Trucks', emoji: '🚚' },
+    ]
+  },
+  {
+    category: 'Sports & Fitness',
+    interests: [
+      { value: 'gym', label: '💪 Gym', emoji: '💪' },
+      { value: 'yoga', label: '🧘 Yoga', emoji: '🧘' },
+      { value: 'running', label: '🏃 Running', emoji: '🏃' },
+      { value: 'hiking', label: '🥾 Hiking', emoji: '🥾' },
+      { value: 'cycling', label: '🚴 Cycling', emoji: '🚴' },
+      { value: 'swimming', label: '🏊 Swimming', emoji: '🏊' },
+      { value: 'tennis', label: '🎾 Tennis', emoji: '🎾' },
+      { value: 'basketball', label: '🏀 Basketball', emoji: '🏀' },
+      { value: 'soccer', label: '⚽ Soccer', emoji: '⚽' },
+      { value: 'football', label: '🏈 Football', emoji: '🏈' },
+      { value: 'baseball', label: '⚾ Baseball', emoji: '⚾' },
+      { value: 'volleyball', label: '🏐 Volleyball', emoji: '🏐' },
+      { value: 'golf', label: '⛳ Golf', emoji: '⛳' },
+      { value: 'skiing', label: '⛷️ Skiing', emoji: '⛷️' },
+      { value: 'snowboarding', label: '🏂 Snowboarding', emoji: '🏂' },
+      { value: 'surfing', label: '🏄 Surfing', emoji: '🏄' },
+      { value: 'rock-climbing', label: '🧗 Rock Climbing', emoji: '🧗' },
+      { value: 'boxing', label: '🥊 Boxing', emoji: '🥊' },
+      { value: 'martial-arts', label: '🥋 Martial Arts', emoji: '🥋' },
+      { value: 'pilates', label: '🤸 Pilates', emoji: '🤸' },
+      { value: 'crossfit', label: '🏋️ CrossFit', emoji: '🏋️' },
+      { value: 'sports-watching', label: '🏟️ Watching Sports', emoji: '🏟️' },
+    ]
+  },
+  {
+    category: 'Outdoor & Adventure',
+    interests: [
+      { value: 'camping', label: '⛺ Camping', emoji: '⛺' },
+      { value: 'backpacking', label: '🎒 Backpacking', emoji: '🎒' },
+      { value: 'kayaking', label: '🛶 Kayaking', emoji: '🛶' },
+      { value: 'fishing', label: '🎣 Fishing', emoji: '🎣' },
+      { value: 'nature', label: '🌲 Nature', emoji: '🌲' },
+      { value: 'beaches', label: '🏖️ Beaches', emoji: '🏖️' },
+      { value: 'mountain-biking', label: '🚵 Mountain Biking', emoji: '🚵' },
+      { value: 'road-trips', label: '🚗 Road Trips', emoji: '🚗' },
+      { value: 'stargazing', label: '⭐ Stargazing', emoji: '⭐' },
+    ]
+  },
+  {
+    category: 'Travel',
+    interests: [
+      { value: 'travel', label: '✈️ Travel', emoji: '✈️' },
+      { value: 'backpacking-travel', label: '🌍 Backpacking', emoji: '🌍' },
+      { value: 'adventure-travel', label: '🗺️ Adventure Travel', emoji: '🗺️' },
+      { value: 'luxury-travel', label: '🏝️ Luxury Travel', emoji: '🏝️' },
+      { value: 'solo-travel', label: '🧳 Solo Travel', emoji: '🧳' },
+      { value: 'international-travel', label: '🌎 International Travel', emoji: '🌎' },
+    ]
+  },
+  {
+    category: 'Gaming & Tech',
+    interests: [
+      { value: 'video-games', label: '🎮 Video Games', emoji: '🎮' },
+      { value: 'board-games', label: '🎲 Board Games', emoji: '🎲' },
+      { value: 'card-games', label: '🃏 Card Games', emoji: '🃏' },
+      { value: 'tech', label: '💻 Technology', emoji: '💻' },
+      { value: 'coding', label: '👨‍💻 Coding', emoji: '👨‍💻' },
+      { value: 'pc-gaming', label: '🖥️ PC Gaming', emoji: '🖥️' },
+      { value: 'console-gaming', label: '🕹️ Console Gaming', emoji: '🕹️' },
+      { value: 'esports', label: '🏆 Esports', emoji: '🏆' },
+    ]
+  },
+  {
+    category: 'Staying In',
+    interests: [
+      { value: 'netflix', label: '📺 Netflix & Chill', emoji: '📺' },
+      { value: 'movie-nights', label: '🍿 Movie Nights', emoji: '🍿' },
+      { value: 'game-nights', label: '🎲 Game Nights', emoji: '🎲' },
+      { value: 'puzzles', label: '🧩 Puzzles', emoji: '🧩' },
+      { value: 'home-cooking', label: '🍳 Home Cooking', emoji: '🍳' },
+    ]
+  },
+  {
+    category: 'Self Care & Wellness',
+    interests: [
+      { value: 'meditation', label: '🧘‍♀️ Meditation', emoji: '🧘‍♀️' },
+      { value: 'spa', label: '💆 Spa Days', emoji: '💆' },
+      { value: 'skincare', label: '✨ Skincare', emoji: '✨' },
+      { value: 'wellness', label: '🌿 Wellness', emoji: '🌿' },
+      { value: 'journaling', label: '📓 Journaling', emoji: '📓' },
+      { value: 'therapy', label: '💭 Therapy', emoji: '💭' },
+      { value: 'mindfulness', label: '🧠 Mindfulness', emoji: '🧠' },
+    ]
+  },
+  {
+    category: 'Pets & Animals',
+    interests: [
+      { value: 'dogs', label: '🐕 Dogs', emoji: '🐕' },
+      { value: 'cats', label: '🐈 Cats', emoji: '🐈' },
+      { value: 'pets', label: '🐾 Pets', emoji: '🐾' },
+      { value: 'animals', label: '🦁 Animals', emoji: '🦁' },
+      { value: 'wildlife', label: '🦋 Wildlife', emoji: '🦋' },
+      { value: 'birdwatching', label: '🦅 Bird Watching', emoji: '🦅' },
+    ]
+  },
+  {
+    category: 'Shopping & Fashion',
+    interests: [
+      { value: 'fashion', label: '👗 Fashion', emoji: '👗' },
+      { value: 'thrifting', label: '🛍️ Thrifting', emoji: '🛍️' },
+      { value: 'shopping', label: '🛒 Shopping', emoji: '🛒' },
+      { value: 'styling', label: '💄 Styling', emoji: '💄' },
+      { value: 'sneakers', label: '👟 Sneakers', emoji: '👟' },
+    ]
+  },
+  {
+    category: 'Social & Volunteering',
+    interests: [
+      { value: 'volunteering', label: '🤝 Volunteering', emoji: '🤝' },
+      { value: 'activism', label: '✊ Activism', emoji: '✊' },
+      { value: 'charity', label: '❤️ Charity Work', emoji: '❤️' },
+      { value: 'community', label: '👥 Community', emoji: '👥' },
+      { value: 'networking', label: '🤝 Networking', emoji: '🤝' },
+    ]
+  },
+  {
+    category: 'Personality Traits',
+    interests: [
+      { value: 'adventurous', label: '🌟 Adventurous', emoji: '🌟' },
+      { value: 'spontaneous', label: '✨ Spontaneous', emoji: '✨' },
+      { value: 'intellectual', label: '🎓 Intellectual', emoji: '🎓' },
+      { value: 'creative', label: '💡 Creative', emoji: '💡' },
+      { value: 'ambitious', label: '🎯 Ambitious', emoji: '🎯' },
+      { value: 'chill', label: '😎 Chill/Relaxed', emoji: '😎' },
+      { value: 'romantic', label: '💖 Romantic', emoji: '💖' },
+      { value: 'funny', label: '😄 Funny', emoji: '😄' },
+      { value: 'empathetic', label: '💝 Empathetic', emoji: '💝' },
+      { value: 'optimistic', label: '🌈 Optimistic', emoji: '🌈' },
+      { value: 'introverted', label: '📖 Introverted', emoji: '📖' },
+      { value: 'extroverted', label: '🎉 Extroverted', emoji: '🎉' },
+      { value: 'spiritual', label: '🕉️ Spiritual', emoji: '🕉️' },
+    ]
+  },
+  {
+    category: 'Miscellaneous',
+    interests: [
+      { value: 'astrology', label: '♈ Astrology', emoji: '♈' },
+      { value: 'tarot', label: '🔮 Tarot', emoji: '🔮' },
+      { value: 'gardening', label: '🌱 Gardening', emoji: '🌱' },
+      { value: 'plants', label: '🪴 Plants', emoji: '🪴' },
+      { value: 'science', label: '🔬 Science', emoji: '🔬' },
+      { value: 'history', label: '📜 History', emoji: '📜' },
+      { value: 'politics', label: '🗳️ Politics', emoji: '🗳️' },
+      { value: 'podcasts', label: '🎙️ Podcasts', emoji: '🎙️' },
+      { value: 'languages', label: '🗣️ Languages', emoji: '🗣️' },
+      { value: 'architecture', label: '🏛️ Architecture', emoji: '🏛️' },
+      { value: 'interior-design', label: '🛋️ Interior Design', emoji: '🛋️' },
+      { value: 'diy', label: '🔧 DIY Projects', emoji: '🔧' },
+      { value: 'vintage-collecting', label: '🕰️ Vintage Collecting', emoji: '🕰️' },
+      { value: 'cars', label: '🚗 Cars', emoji: '🚗' },
+      { value: 'motorcycles', label: '🏍️ Motorcycles', emoji: '🏍️' },
+    ]
+  }
 ];
+
+// Flatten all interests for backwards compatibility
+const interests = interestsByCategory.flatMap(category => category.interests);
 
 // Profile fields data (same as ProfileEditScreen)
 const profileFields = {
@@ -652,7 +902,11 @@ const ProfileCreationScreen = () => {
                   placeholderTextColor={colors.textSecondary}
                   multiline
                   numberOfLines={4}
+                  maxLength={500}
                 />
+                <Text style={[styles.characterCount, { color: colors.textSecondary }]}>
+                  {formData.bio.length}/500
+                </Text>
               </View>
 
               {/* Interests */}
@@ -681,25 +935,56 @@ const ProfileCreationScreen = () => {
                       placeholder="Search interests..."
                       placeholderTextColor={colors.textSecondary}
                     />
-                    <View style={styles.interestsGrid}>
-                      {filteredInterests.map((interest) => (
-                        <TouchableOpacity
-                          key={interest.value}
-                          style={[
-                            styles.interestTag,
-                            selectedInterests.some(item => item.value === interest.value) && styles.selectedInterestTag
-                          ]}
-                          onPress={() => toggleInterest(interest)}
-                        >
-                          <Text style={[
-                            styles.interestText,
-                            selectedInterests.some(item => item.value === interest.value) && styles.selectedInterestText
-                          ]}>
-                            {interest.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+                    <ScrollView style={styles.interestsScroll} showsVerticalScrollIndicator={false}>
+                      {searchQuery ? (
+                        // Show filtered results when searching
+                        <View style={styles.interestsGrid}>
+                          {filteredInterests.map((interest) => (
+                            <TouchableOpacity
+                              key={interest.value}
+                              style={[
+                                styles.interestTag,
+                                selectedInterests.some(item => item.value === interest.value) && styles.selectedInterestTag
+                              ]}
+                              onPress={() => toggleInterest(interest)}
+                            >
+                              <Text style={[
+                                styles.interestText,
+                                selectedInterests.some(item => item.value === interest.value) && styles.selectedInterestText
+                              ]}>
+                                {interest.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : (
+                        // Show organized by category when not searching
+                        interestsByCategory.map((category) => (
+                          <View key={category.category} style={styles.categorySection}>
+                            <Text style={[styles.categoryHeader, { color: colors.text }]}>{category.category}</Text>
+                            <View style={styles.interestsGrid}>
+                              {category.interests.map((interest) => (
+                                <TouchableOpacity
+                                  key={interest.value}
+                                  style={[
+                                    styles.interestTag,
+                                    selectedInterests.some(item => item.value === interest.value) && styles.selectedInterestTag
+                                  ]}
+                                  onPress={() => toggleInterest(interest)}
+                                >
+                                  <Text style={[
+                                    styles.interestText,
+                                    selectedInterests.some(item => item.value === interest.value) && styles.selectedInterestText
+                                  ]}>
+                                    {interest.label}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          </View>
+                        ))
+                      )}
+                    </ScrollView>
                   </View>
                 )}
               </View>
@@ -1080,6 +1365,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     textAlignVertical: 'top',
   },
+  characterCount: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    marginTop: 4,
+    textAlign: 'right',
+  },
   interestsButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1095,6 +1386,19 @@ const styles = StyleSheet.create({
   },
   interestsContainer: {
     marginTop: 10,
+  },
+  interestsScroll: {
+    maxHeight: 400,
+  },
+  categorySection: {
+    marginBottom: 20,
+  },
+  categoryHeader: {
+    fontSize: 18,
+    fontFamily: 'Georgia',
+    fontWeight: 'bold',
+    marginBottom: 10,
+    marginTop: 5,
   },
   searchInput: {
     borderWidth: 1,

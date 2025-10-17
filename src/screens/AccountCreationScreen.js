@@ -167,7 +167,18 @@ const AccountCreationScreen = ({ navigation }) => {
   };
 
   const updateFormData = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // If password field changes and confirmPassword has a value, revalidate confirmPassword
+      if (field === 'password' && prev.confirmPassword) {
+        setTimeout(() => {
+          validateField('confirmPassword', prev.confirmPassword, updated);
+        }, 600);
+      }
+      
+      return updated;
+    });
     
     // Clear error for this field
     if (errors[field]) {
@@ -180,102 +191,110 @@ const AccountCreationScreen = ({ navigation }) => {
       setValidationMessages(prev => ({ ...prev, [field]: '' }));
       
       setTimeout(async () => {
-        let isValid = false;
-        let isUnique = true;
-        let message = '';
-
-        if (field === 'email') {
-          if (!value) {
-            message = 'Email is required';
-          } else if (!validateEmail(value)) {
-            message = 'Please enter a valid email address';
-          } else {
-            const isDuplicate = await checkForDuplicates('email', value);
-            isUnique = !isDuplicate;
-            if (isDuplicate) {
-              message = 'This email is already registered';
-            } else {
-              message = '';
-              isValid = true;
-            }
-          }
-        } else if (field === 'phoneNumber') {
-          if (!value) {
-            message = 'Phone number is required';
-          } else if (!validatePhoneNumber(value) || !validatePhoneNumberDigits(value)) {
-            message = 'Please enter a valid 10-digit phone number';
-          } else {
-            const isDuplicate = await checkForDuplicates('phoneNumber', value);
-            isUnique = !isDuplicate;
-            if (isDuplicate) {
-              message = 'This phone number is already registered';
-            } else {
-              message = '';
-              isValid = true;
-            }
-          }
-        } else if (field === 'password') {
-          if (!value) {
-            message = 'Password is required';
-          } else if (value.length < 8) {
-            message = 'Password must be at least 8 characters';
-          } else if (!/[A-Z]/.test(value)) {
-            message = 'Password must contain at least 1 uppercase letter';
-          } else if (!/[0-9]/.test(value)) {
-            message = 'Password must contain at least 1 number';
-          } else if (!/[^A-Za-z0-9]/.test(value)) {
-            message = 'Password must contain at least 1 special character';
-          } else {
-            message = '';
-            isValid = true;
-          }
-        } else if (field === 'confirmPassword') {
-          if (!value) {
-            message = 'Please confirm your password';
-          } else if (value !== formData.password) {
-            message = 'Passwords do not match';
-          } else {
-            message = 'Passwords match!';
-            isValid = true;
-          }
-        } else if (field === 'birthday') {
-          if (!value) {
-            message = 'Birthday is required';
-          } else if (value.length < 8) {
-            message = 'Please enter complete date (MM/DD/YYYY)';
-          } else if (!validateBirthdayFormat(value)) {
-            message = 'Please enter a valid date';
-          } else {
-            message = '';
-            isValid = true;
-          }
-        } else if (field === 'gender') {
-          if (!value) {
-            message = 'Gender is required';
-          } else {
-            message = 'Gender selected!';
-            isValid = true;
-          }
-        } else if (field === 'sexuality') {
-          if (!value) {
-            message = 'Sexuality is required';
-          } else {
-            message = 'Sexuality selected!';
-            isValid = true;
-          }
-        }
-
-        setValidationStatus(prev => ({
-          ...prev,
-          [field]: isValid ? 'valid' : 'invalid'
-        }));
-        
-        setValidationMessages(prev => ({
-          ...prev,
-          [field]: message
-        }));
+        // Get the latest formData state to ensure we have the most recent password value
+        setFormData(currentFormData => {
+          validateField(field, value, currentFormData);
+          return currentFormData;
+        });
       }, 500);
     }
+  };
+
+  const validateField = async (field, value, currentFormData) => {
+    let isValid = false;
+    let isUnique = true;
+    let message = '';
+
+    if (field === 'email') {
+      if (!value) {
+        message = 'Email is required';
+      } else if (!validateEmail(value)) {
+        message = 'Please enter a valid email address';
+      } else {
+        const isDuplicate = await checkForDuplicates('email', value);
+        isUnique = !isDuplicate;
+        if (isDuplicate) {
+          message = 'This email is already registered';
+        } else {
+          message = '';
+          isValid = true;
+        }
+      }
+    } else if (field === 'phoneNumber') {
+      if (!value) {
+        message = 'Phone number is required';
+      } else if (!validatePhoneNumber(value) || !validatePhoneNumberDigits(value)) {
+        message = 'Please enter a valid 10-digit phone number';
+      } else {
+        const isDuplicate = await checkForDuplicates('phoneNumber', value);
+        isUnique = !isDuplicate;
+        if (isDuplicate) {
+          message = 'This phone number is already registered';
+        } else {
+          message = '';
+          isValid = true;
+        }
+      }
+    } else if (field === 'password') {
+      if (!value) {
+        message = 'Password is required';
+      } else if (value.length < 8) {
+        message = 'Password must be at least 8 characters';
+      } else if (!/[A-Z]/.test(value)) {
+        message = 'Password must contain at least 1 uppercase letter';
+      } else if (!/[0-9]/.test(value)) {
+        message = 'Password must contain at least 1 number';
+      } else if (!/[^A-Za-z0-9]/.test(value)) {
+        message = 'Password must contain at least 1 special character';
+      } else {
+        message = '';
+        isValid = true;
+      }
+    } else if (field === 'confirmPassword') {
+      if (!value) {
+        message = 'Please confirm your password';
+      } else if (value !== currentFormData.password) {
+        message = 'Passwords do not match';
+      } else {
+        message = 'Passwords match!';
+        isValid = true;
+      }
+    } else if (field === 'birthday') {
+      if (!value) {
+        message = 'Birthday is required';
+      } else if (value.length < 8) {
+        message = 'Please enter complete date (MM/DD/YYYY)';
+      } else if (!validateBirthdayFormat(value)) {
+        message = 'Please enter a valid date';
+      } else {
+        message = '';
+        isValid = true;
+      }
+    } else if (field === 'gender') {
+      if (!value) {
+        message = 'Gender is required';
+      } else {
+        message = 'Gender selected!';
+        isValid = true;
+      }
+    } else if (field === 'sexuality') {
+      if (!value) {
+        message = 'Sexuality is required';
+      } else {
+        message = 'Sexuality selected!';
+        isValid = true;
+      }
+    }
+
+    setValidationStatus(prev => ({
+      ...prev,
+      [field]: isValid ? 'valid' : 'invalid'
+    }));
+    
+    setValidationMessages(prev => ({
+      ...prev,
+      [field]: message
+    }));
   };
 
   const handleCreateAccount = async () => {
@@ -1200,17 +1219,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A0D0F', // Set the darkest gradient color as background
   },
   backgroundGradient: {
-    flex: 1,
     minHeight: '100%',
   },
   safeArea: {
     flex: 1,
   },
   content: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingBottom: 80,
   },
   header: {
     alignItems: 'center',
@@ -1650,7 +1668,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 200, // Extra padding to prevent screen cut off when scrolling
   },
   eyeButton: {
     position: 'absolute',
